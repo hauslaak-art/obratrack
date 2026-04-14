@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1923">
+<title>ObraTrack · Haus Laak</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#0f1923; --surface:#162130; --surface2:#1d2d3e; --surface3:#243547;
+  --border:#2a3d52; --accent:#00d4ff; --accent2:#ff6b2b; --green:#00e676;
+  --red:#ff4444; --amber:#ffc107; --text:#e8f4f8; --muted:#6b8fa8;
+  --font:'Syne',sans-serif; --mono:'JetBrains Mono',monospace;
+  --radius:14px; --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);overscroll-behavior:none}
+.screen{display:none;height:100dvh;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;padding-top:max(16px,env(safe-area-inset-top,16px));background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;gap:12px}
+.topbar-brand{font-size:18px;font-weight:800;letter-spacing:-.5px;color:var(--accent)}
+.topbar-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.topbar-right{display:flex;gap:8px}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .15s;flex-shrink:0}
+.icon-btn:active{background:var(--surface3);transform:scale(.94)}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:100px}
+.project-bar{display:flex;gap:8px;padding:12px 16px;overflow-x:auto;flex-shrink:0;background:var(--surface);border-bottom:1px solid var(--border);scrollbar-width:none}
+.project-bar::-webkit-scrollbar{display:none}
+.proj-chip{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted);transition:all .2s;font-family:var(--font)}
+.proj-chip.active{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.proj-chip.add-chip{border-style:dashed}
+.kpi-strip{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px 0}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px}
+.kpi-card.c1::before{background:var(--accent)}.kpi-card.c2::before{background:var(--accent2)}.kpi-card.c3::before{background:var(--green)}.kpi-card.c4::before{background:var(--amber)}
+.kpi-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.kpi-value{font-size:20px;font-weight:800;letter-spacing:-.5px;font-family:var(--mono)}
+.kpi-value.accent{color:var(--accent)}.kpi-value.orange{color:var(--accent2)}.kpi-value.green{color:var(--green)}.kpi-value.amber{color:var(--amber)}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.sec-header{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 10px}
+.sec-title{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:600}
+.sec-action{font-size:11px;color:var(--accent);font-weight:600;cursor:pointer}
+.tx-list{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.tx-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s;animation:slideIn .25s ease backwards}
+.tx-item:active{background:var(--surface2);transform:scale(.98)}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.tx-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-desc{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tx-meta{font-size:11px;color:var(--muted);margin-top:2px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.tx-badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.badge-ef{background:rgba(255,107,43,.15);color:var(--accent2)}
+.badge-tr{background:rgba(0,212,255,.12);color:var(--accent)}
+.badge-tc{background:rgba(0,230,118,.15);color:var(--green)}
+.badge-ai{background:rgba(167,139,250,.2);color:#a78bfa;font-size:8px}
+.tx-amount{font-family:var(--mono);font-size:15px;font-weight:600;flex-shrink:0}
+.mini-chart{padding:0 16px}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:80px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 12px 0}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.chart-bar-fill{width:100%;border-radius:4px 4px 0 0;background:var(--accent);opacity:.7;transition:height .4s ease;min-height:2px}
+.chart-bar-fill.active-bar{opacity:1;background:var(--accent2)}
+.chart-bar-label{font-size:8px;color:var(--muted);text-align:center;padding-bottom:6px;white-space:nowrap}
+.concept-list{padding:0 16px;display:flex;flex-direction:column;gap:6px}
+.concept-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.concept-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.concept-name{flex:1;font-size:12px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.concept-bar-wrap{width:80px;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;flex-shrink:0}
+.concept-bar-inner{height:100%;border-radius:3px}
+.concept-amount{font-family:var(--mono);font-size:11px;color:var(--muted);flex-shrink:0;width:70px;text-align:right}
+
+/* FAB GROUP */
+.fab-group{position:fixed;bottom:calc(74px + var(--safe-bottom));right:20px;display:flex;flex-direction:column;align-items:flex-end;gap:10px;z-index:100}
+.fab{width:58px;height:58px;border-radius:18px;background:var(--accent2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;box-shadow:0 8px 24px rgba(255,107,43,.4);transition:all .2s;border:none;font-family:var(--font)}
+.fab:active{transform:scale(.92)}
+.fab-scan{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,#6d28d9,#a78bfa);color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;border:none;box-shadow:0 6px 20px rgba(109,40,217,.45);transition:all .2s}
+.fab-scan:active{transform:scale(.92)}
+.fab-label{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--muted);white-space:nowrap}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:calc(64px + var(--safe-bottom));background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:flex-start;padding-top:8px;z-index:99}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:6px 0;transition:all .15s}
+.nav-icon{font-size:22px;transition:transform .2s}
+.nav-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600}
+.nav-item.active .nav-icon{transform:translateY(-2px);filter:drop-shadow(0 0 6px var(--accent))}
+.nav-item.active .nav-label{color:var(--accent)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:24px 24px 0 0;padding:20px 20px calc(20px + var(--safe-bottom));width:100%;max-width:540px;animation:slideUp .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px}
+.modal-title{font-size:20px;font-weight:800;margin-bottom:20px;letter-spacing:-.5px}
+.modal-title span{color:var(--accent2)}
+.form-grid{display:flex;flex-direction:column;gap:12px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600}
+.form-input,.form-select{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;font-family:var(--font);padding:13px 16px;width:100%;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--muted)}
+.form-input.amount-input{font-family:var(--mono);font-size:24px;font-weight:600;text-align:center;letter-spacing:-1px;border-color:var(--accent2);color:var(--accent2)}
+.method-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.method-btn{padding:12px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.method-btn.active-ef{background:rgba(255,107,43,.15);border-color:var(--accent2);color:var(--accent2)}
+.method-btn.active-tr{background:rgba(0,212,255,.1);border-color:var(--accent);color:var(--accent)}
+.submit-btn{width:100%;padding:16px;border-radius:14px;background:var(--accent2);color:#fff;font-size:16px;font-weight:800;font-family:var(--font);border:none;cursor:pointer;letter-spacing:.5px;transition:all .2s;margin-top:4px}
+.submit-btn:active{transform:scale(.97)}
+.search-wrap{position:relative;padding:12px 16px}
+.search-icon{position:absolute;left:28px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--muted);pointer-events:none}
+.search-input{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;font-family:var(--font);padding:12px 16px 12px 44px;width:100%;outline:none}
+.search-input:focus{border-color:var(--accent)}
+.filter-bar{display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font);transition:all .2s}
+.filter-chip.on{background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent)}
+.export-card{margin:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.export-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.export-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+.export-btn{width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;background:transparent;color:var(--text)}
+.export-btn:active{transform:scale(.97)}
+.export-btn.primary{background:var(--green);color:var(--bg);border-color:var(--green)}
+.export-btn.secondary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.export-btn.onedrive{background:rgba(0,120,212,.15);border-color:#0078d4;color:#4da6ff}
+.export-btn.danger{background:rgba(255,68,68,.08);border-color:rgba(255,68,68,.3);color:var(--red)}
+.input-hidden{display:none}
+.od-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);margin-bottom:12px;font-size:12px}
+.od-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.od-dot.connected{background:var(--green);box-shadow:0 0 6px var(--green)}
+.od-dot.disconnected{background:var(--muted)}
+.od-dot.syncing{background:var(--amber);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.od-text{flex:1;color:var(--text)}
+.od-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;text-align:center}
+.empty-icon{font-size:48px;opacity:.3}
+.empty-text{font-size:14px;color:var(--muted)}
+.toast{position:fixed;top:max(20px,env(safe-area-inset-top,20px));left:50%;transform:translateX(-50%) translateY(-80px);background:var(--green);color:var(--bg);padding:12px 24px;border-radius:30px;font-size:13px;font-weight:700;z-index:999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--red);color:#fff}
+
+/* SCAN */
+.scan-source-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.scan-source-btn{padding:20px 12px;border-radius:14px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:10px;transition:all .2s}
+.scan-source-btn:active{transform:scale(.96)}
+.scan-source-btn .s-icon{font-size:32px}
+.scan-source-btn.camera{border-color:rgba(167,139,250,.4);background:rgba(109,40,217,.1);color:#c4b5fd}
+.scan-source-btn.pdf{border-color:rgba(255,107,43,.4);background:rgba(255,107,43,.08);color:var(--accent2)}
+.ai-loading{display:flex;flex-direction:column;align-items:center;gap:16px;padding:28px 0}
+.ai-spinner{width:56px;height:56px;border-radius:50%;border:3px solid var(--surface3);border-top-color:#a78bfa;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-loading-title{font-size:16px;font-weight:700}
+.ai-loading-sub{font-size:12px;color:var(--muted);text-align:center;line-height:1.6}
+.ai-pulse-bar{width:200px;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden}
+.ai-pulse-fill{height:100%;background:linear-gradient(90deg,#6d28d9,#a78bfa,#6d28d9);background-size:200%;animation:shimmer 1.5s infinite}
+@keyframes shimmer{0%{background-position:200%}100%{background-position:-200%}}
+.ai-result-box{background:rgba(109,40,217,.08);border:1.5px solid rgba(167,139,250,.25);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.ai-result-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.ai-result-badge{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#a78bfa;background:rgba(167,139,250,.15);padding:3px 10px;border-radius:20px}
+.ai-result-rows{display:flex;flex-direction:column;gap:6px}
+.ai-result-row{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+.ai-result-key{color:var(--muted);flex-shrink:0}
+.ai-result-val{color:var(--text);font-weight:600;text-align:right;word-break:break-all}
+
+/* DETAIL */
+.detail-section{margin-bottom:18px}
+.detail-section-title{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.detail-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:7px 0;border-bottom:1px solid rgba(42,61,82,.5)}
+.detail-row:last-child{border-bottom:none}
+.detail-key{font-size:11px;color:var(--muted);flex-shrink:0;min-width:110px}
+.detail-val{font-size:12px;font-weight:600;text-align:right;word-break:break-all}
+.detail-val.mono{font-family:var(--mono);font-size:11px}
+.detail-val.accent{color:var(--accent)}.detail-val.green{color:var(--green)}.detail-val.orange{color:var(--accent2)}
+.detail-amount-big{font-family:var(--mono);font-size:32px;font-weight:700;color:var(--accent2);text-align:center;padding:16px 0 8px;letter-spacing:-1px}
+.detail-concept-badge{display:block;width:fit-content;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.25);margin:0 auto 16px}
+.detail-del-btn{width:100%;padding:13px;border-radius:12px;border:1.5px solid rgba(255,68,68,.3);background:rgba(255,68,68,.08);color:var(--red);font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;margin-top:8px;transition:all .2s}
+.uuid-chip{font-family:var(--mono);font-size:9px;color:var(--muted);background:var(--surface3);border-radius:6px;padding:4px 8px;word-break:break-all;line-height:1.5}
+.file-thumb{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s}
+.file-thumb:active{background:var(--surface3)}
+.file-thumb-icon{font-size:22px;flex-shrink:0}
+.file-thumb-name{flex:1;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-thumb-size{font-size:10px;color:var(--muted);flex-shrink:0}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.stat-number{font-family:var(--mono);font-size:22px;font-weight:700}
+.stat-label{font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:1px;text-transform:uppercase}
+.prov-list{padding:0 16px;display:flex;flex-direction:column;gap:6px}
+.prov-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.prov-rank{font-family:var(--mono);font-size:11px;color:var(--muted);width:20px;flex-shrink:0}
+.prov-name{flex:1;font-size:13px;font-weight:600;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prov-amount{font-family:var(--mono);font-size:12px;color:var(--amber);flex-shrink:0}
+
+/* GMAIL SCREEN */
+.gmail-setup{padding:20px 16px}
+.gmail-hero{text-align:center;padding:24px 0 20px}
+.gmail-hero-icon{font-size:52px;margin-bottom:12px}
+.gmail-hero-title{font-size:20px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+.gmail-hero-sub{font-size:13px;color:var(--muted);line-height:1.7;max-width:320px;margin:0 auto}
+.gmail-status{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;background:var(--surface2);border:1px solid var(--border);margin-bottom:14px}
+.gmail-status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.gmail-status-dot.ok{background:var(--green);box-shadow:0 0 6px var(--green)}
+.gmail-status-dot.off{background:var(--muted)}
+.gmail-status-dot.spin{background:var(--amber);animation:pulse 1s infinite}
+.gmail-status-info{flex:1}
+.gmail-status-name{font-size:13px;font-weight:700}
+.gmail-status-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.gmail-btn{width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;border:none;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px}
+.gmail-btn:active{transform:scale(.97)}
+.gmail-btn.connect{background:linear-gradient(135deg,#ea4335,#fbbc04);color:#fff}
+.gmail-btn.fetch{background:var(--surface2);border:1.5px solid var(--border);color:var(--text)}
+.gmail-btn.disconnect{background:rgba(255,68,68,.08);border:1.5px solid rgba(255,68,68,.25);color:var(--red)}
+.gmail-clientid-wrap{margin-bottom:14px}
+.gmail-clientid-input{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:12px;font-family:var(--mono);padding:12px 14px;width:100%;outline:none;transition:border-color .2s}
+.gmail-clientid-input:focus{border-color:var(--accent)}
+.gmail-clientid-hint{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.6}
+.mail-list{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.mail-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;cursor:pointer;transition:all .15s;animation:slideIn .25s ease backwards}
+.mail-item:active{background:var(--surface2);transform:scale(.98)}
+.mail-item.processed{opacity:.5;border-style:dashed}
+.mail-icon{width:40px;height:40px;border-radius:12px;background:rgba(234,67,53,.12);border:1px solid rgba(234,67,53,.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.mail-info{flex:1;min-width:0}
+.mail-from{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mail-subject{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mail-date{font-size:10px;color:var(--muted);margin-top:4px}
+.mail-attach{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.mail-attach-chip{font-size:9px;background:rgba(255,107,43,.12);color:var(--accent2);border:1px solid rgba(255,107,43,.2);padding:2px 7px;border-radius:6px;font-weight:700}
+.mail-processed-badge{font-size:9px;background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.2);padding:2px 8px;border-radius:6px;font-weight:700;white-space:nowrap;flex-shrink:0;align-self:center}
+.gmail-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:10px;text-align:center}
+.gmail-empty-icon{font-size:44px;opacity:.3}
+.gmail-empty-text{font-size:13px;color:var(--muted);line-height:1.7}
+.gmail-filter-bar{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.gmail-filter-bar::-webkit-scrollbar{display:none}
+/* Mail detail modal */
+.mail-att-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.mail-att-row{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s}
+.mail-att-row:active{background:var(--surface3)}
+.mail-att-icon{font-size:22px;flex-shrink:0}
+.mail-att-name{flex:1;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mail-att-scan{font-size:10px;font-weight:700;color:#a78bfa;background:rgba(167,139,250,.15);padding:3px 9px;border-radius:20px;flex-shrink:0}
+
+</style>
+</head>
+<body>
+
+<!-- DASHBOARD -->
+<div class="screen active" id="screen-dash">
+  <div class="topbar">
+    <div><div class="topbar-brand">ObraTrack</div><div class="topbar-sub" id="dash-subtitle">Haus Laak Constructora</div></div>
+    <div class="topbar-right">
+      <div class="icon-btn" onclick="openAddProject()">＋</div>
+      <div class="icon-btn" onclick="switchScreen('screen-export')">📤</div>
+    </div>
+  </div>
+  <div class="project-bar" id="projectBar"></div>
+  <div class="scroll">
+    <div class="kpi-strip">
+      <div class="kpi-card c1"><div class="kpi-label">Total Obra</div><div class="kpi-value accent" id="kpi-total">$0</div><div class="kpi-sub" id="kpi-txcount">0 registros</div></div>
+      <div class="kpi-card c2"><div class="kpi-label">Esta Semana</div><div class="kpi-value orange" id="kpi-week">$0</div><div class="kpi-sub" id="kpi-weekcount">0 mov.</div></div>
+      <div class="kpi-card c3"><div class="kpi-label">Efectivo</div><div class="kpi-value green" id="kpi-ef">$0</div><div class="kpi-sub">método pago</div></div>
+      <div class="kpi-card c4"><div class="kpi-label">Transferencia</div><div class="kpi-value amber" id="kpi-tr">$0</div><div class="kpi-sub">método pago</div></div>
+    </div>
+    <div class="sec-header"><span class="sec-title">Últimos 8 días</span></div>
+    <div class="mini-chart"><div class="chart-bars" id="miniChart"></div></div>
+    <div class="sec-header"><span class="sec-title">Por Concepto</span><span class="sec-action" onclick="switchScreen('screen-stats')">Ver todo →</span></div>
+    <div class="concept-list" id="conceptList"></div>
+    <div class="sec-header"><span class="sec-title">Recientes</span><span class="sec-action" onclick="switchScreen('screen-list')">Ver todo →</span></div>
+    <div class="tx-list" id="recentList"></div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- LIST -->
+<div class="screen" id="screen-list">
+  <div class="topbar">
+    <div><div class="topbar-brand">Movimientos</div><div class="topbar-sub" id="list-subtitle">todos los registros</div></div>
+    <div class="topbar-right"><div class="icon-btn" onclick="switchScreen('screen-export')">📤</div></div>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" id="searchInput" placeholder="Buscar descripción, proveedor..." oninput="renderList()">
+  </div>
+  <div class="filter-bar">
+    <div class="filter-chip on" onclick="setFilter(this,'ALL')">Todos</div>
+    <div class="filter-chip" onclick="setFilter(this,'EFECTIVO')">Efectivo</div>
+    <div class="filter-chip" onclick="setFilter(this,'TRANSFERENCIA')">Transf.</div>
+    <div class="filter-chip" onclick="setFilter(this,'TARJETA')">Tarjeta</div>
+    <div class="filter-chip" onclick="setFilter(this,'AI')">✨ Escaneadas</div>
+  </div>
+  <div class="scroll"><div class="tx-list" id="fullList"></div><div style="height:20px"></div></div>
+</div>
+
+<!-- STATS -->
+<div class="screen" id="screen-stats">
+  <div class="topbar"><div><div class="topbar-brand">Análisis</div><div class="topbar-sub">resumen ejecutivo</div></div></div>
+  <div class="scroll">
+    <div class="sec-header" style="padding-top:16px"><span class="sec-title">Resumen General</span></div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="sec-header"><span class="sec-title">Top Proveedores</span></div>
+    <div class="prov-list" id="provList"></div>
+    <div class="sec-header"><span class="sec-title">Por Concepto</span></div>
+    <div class="concept-list" id="statsConceptList"></div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- EXPORT -->
+<div class="screen" id="screen-export">
+  <div class="topbar"><div><div class="topbar-brand">Exportar</div><div class="topbar-sub">respaldo y reportes</div></div></div>
+  <div class="scroll">
+    <div class="export-card">
+      <div class="export-title">☁️ OneDrive</div><div class="export-sub">Guarda y recupera todos tus datos en la nube Microsoft.</div>
+      <div class="od-status"><div class="od-dot disconnected" id="od-dot"></div><div><div class="od-text" id="od-text">No conectado</div><div class="od-sub" id="od-sub">Inicia sesión con tu cuenta Microsoft</div></div></div>
+      <button class="export-btn onedrive" id="btn-od-login" onclick="odLogin()">🔑 Conectar con Microsoft</button>
+      <button class="export-btn onedrive" id="btn-od-save" onclick="odSave()" style="display:none">⬆ Guardar en OneDrive</button>
+      <button class="export-btn" id="btn-od-load" onclick="odLoad()" style="display:none;border-color:#0078d4;color:#4da6ff">⬇ Cargar desde OneDrive</button>
+      <button class="export-btn danger" id="btn-od-logout" onclick="odLogout()" style="display:none;margin-top:4px">Desconectar cuenta</button>
+    </div>
+    <div class="export-card">
+      <div class="export-title">💾 Respaldo Local</div><div class="export-sub">Exporta todos tus datos como archivo .json para trasladar entre dispositivos.</div>
+      <button class="export-btn primary" onclick="exportJSON()">⬇ Descargar Respaldo (.json)</button>
+      <button class="export-btn" onclick="document.getElementById('import-json-input').click()" style="border-color:var(--amber);color:var(--amber)">⬆ Importar Respaldo (.json)</button>
+      <input class="input-hidden" type="file" id="import-json-input" accept=".json" onchange="importJSON(event)">
+    </div>
+    <div class="export-card">
+      <div class="export-title">📊 Excel Completo</div><div class="export-sub">Todas las obras con resúmenes por concepto, proveedor y datos fiscales.</div>
+      <button class="export-btn primary" onclick="exportExcel('all')">⬇ Descargar Excel Completo</button>
+    </div>
+    <div class="export-card">
+      <div class="export-title">📁 Excel por Obra Activa</div><div class="export-sub" id="export-proj-name">Solo la obra seleccionada.</div>
+      <button class="export-btn secondary" onclick="exportExcel('project')">⬇ Descargar Obra Actual</button>
+    </div>
+    <div class="export-card">
+      <div class="export-title">📋 Resumen Semanal</div><div class="export-sub">Totales agrupados por semana con métodos de pago.</div>
+      <button class="export-btn" onclick="exportExcel('weekly')" style="background:var(--amber);color:var(--bg);border-color:var(--amber)">⬇ Descargar Semanas</button>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+
+<!-- GMAIL SCREEN -->
+<div class="screen" id="screen-gmail">
+  <div class="topbar">
+    <div><div class="topbar-brand">Correos</div><div class="topbar-sub" id="gmail-topbar-sub">facturas en tu bandeja</div></div>
+    <div class="topbar-right">
+      <div class="icon-btn" id="gmail-refresh-btn" onclick="gmailFetch()" style="display:none">🔄</div>
+    </div>
+  </div>
+  <div id="gmail-main-area" class="scroll">
+
+    <!-- SETUP (no conectado) -->
+    <div id="gmail-setup-view">
+      <div class="gmail-setup">
+        <div class="gmail-hero">
+          <div class="gmail-hero-icon">📬</div>
+          <div class="gmail-hero-title">Facturas desde Gmail</div>
+          <div class="gmail-hero-sub">Conecta tu cuenta y ObraTrack detectará automáticamente los correos con facturas adjuntas para escanearlas con IA.</div>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:10px">⚙️ Configuración</div>
+          <div class="gmail-clientid-wrap">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600">Google Client ID</div>
+            <input class="gmail-clientid-input" id="gmail-client-id" placeholder="xxxx.apps.googleusercontent.com" oninput="saveGmailClientId()">
+            <div class="gmail-clientid-hint">
+              Obtén tu Client ID gratis en <strong style="color:var(--accent)">console.cloud.google.com</strong><br>
+              Toca el botón ❓ de abajo para ver las instrucciones paso a paso.
+            </div>
+          </div>
+        </div>
+
+        <button class="gmail-btn connect" onclick="gmailLogin()" id="gmail-connect-btn">
+          <span style="font-size:18px">📧</span> Conectar Gmail
+        </button>
+        <button class="gmail-btn fetch" onclick="showGmailInstructions()" style="border-color:rgba(0,212,255,.3);color:var(--accent)">
+          ❓ Cómo obtener el Client ID
+        </button>
+        <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:8px;line-height:1.7">
+          Solo lectura · ObraTrack nunca envía ni modifica tus correos.<br>
+          Yahoo: reenvía tus facturas a Gmail con un filtro automático.
+        </div>
+      </div>
+    </div>
+
+    <!-- CONECTADO -->
+    <div id="gmail-connected-view" style="display:none">
+      <div style="padding:12px 16px 0">
+        <div class="gmail-status">
+          <div class="gmail-status-dot ok" id="gmail-dot"></div>
+          <div class="gmail-status-info">
+            <div class="gmail-status-name" id="gmail-user-label">Gmail conectado</div>
+            <div class="gmail-status-sub" id="gmail-last-sync">Toca 🔄 para buscar facturas</div>
+          </div>
+        </div>
+      </div>
+      <div class="gmail-filter-bar">
+        <div class="filter-chip on" onclick="setGmailFilter(this,'ALL')">Todos</div>
+        <div class="filter-chip" onclick="setGmailFilter(this,'PENDING')">⏳ Pendientes</div>
+        <div class="filter-chip" onclick="setGmailFilter(this,'DONE')">✅ Procesados</div>
+      </div>
+      <div class="mail-list" id="mailList">
+        <div class="gmail-empty">
+          <div class="gmail-empty-icon">🔄</div>
+          <div class="gmail-empty-text">Toca el botón 🔄 arriba<br>para buscar facturas en tu Gmail</div>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-dash" onclick="switchScreen('screen-dash');setNav('nav-dash')"><span class="nav-icon">🏠</span><span class="nav-label">Inicio</span></div>
+  <div class="nav-item" id="nav-list" onclick="switchScreen('screen-list');setNav('nav-list')"><span class="nav-icon">📋</span><span class="nav-label">Registros</span></div>
+  <div class="nav-item" id="nav-gmail" onclick="switchScreen('screen-gmail');setNav('nav-gmail')"><span class="nav-icon">📬</span><span class="nav-label">Correos</span></div>
+  <div class="nav-item" id="nav-stats" onclick="switchScreen('screen-stats');setNav('nav-stats')"><span class="nav-icon">📊</span><span class="nav-label">Análisis</span></div>
+  <div class="nav-item" id="nav-export" onclick="switchScreen('screen-export');setNav('nav-export')"><span class="nav-icon">📤</span><span class="nav-label">Exportar</span></div>
+</div>
+
+<!-- FAB GROUP -->
+<div class="fab-group">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span class="fab-label">Escanear factura</span>
+    <button class="fab-scan" onclick="openScan()">✨</button>
+  </div>
+  <button class="fab" onclick="openNewTx()">＋</button>
+</div>
+
+<!-- SCAN MODAL -->
+<div class="modal-overlay" id="scanModal" onclick="closeOnBg(event,'scanModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Escanear <span>Factura</span></div>
+    <div id="scan-pick">
+      <div class="scan-source-grid">
+        <button class="scan-source-btn camera" onclick="triggerCapture('camera')">
+          <span class="s-icon">📷</span><span>Cámara</span>
+        </button>
+        <button class="scan-source-btn pdf" onclick="triggerCapture('file')">
+          <span class="s-icon">📄</span><span>PDF / Imagen</span>
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;line-height:1.7">
+        La IA lee el CFDI y llena todos los campos automáticamente.<br>
+        Puedes revisar y editar en cualquier momento.
+      </div>
+    </div>
+    <div id="scan-loading" style="display:none">
+      <div class="ai-loading">
+        <div class="ai-spinner"></div>
+        <div class="ai-loading-title">Analizando factura…</div>
+        <div class="ai-loading-sub" id="ai-msg">Leyendo el CFDI con IA</div>
+        <div class="ai-pulse-bar"><div class="ai-pulse-fill"></div></div>
+      </div>
+    </div>
+    <div id="scan-result" style="display:none">
+      <div class="ai-result-box" id="aiResultBox"></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="submit-btn" onclick="confirmAi()" style="background:linear-gradient(135deg,#6d28d9,#a78bfa)">✅ Guardar registro</button>
+        <button class="submit-btn" onclick="editAi()" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border)">✏️ Revisar antes de guardar</button>
+        <button onclick="resetScan()" style="background:transparent;border:none;color:var(--muted);font-family:var(--font);font-size:12px;cursor:pointer;padding:8px;text-align:center;width:100%">Cancelar</button>
+      </div>
+    </div>
+    <div id="scan-error" style="display:none">
+      <div style="text-align:center;padding:20px 0">
+        <div style="font-size:36px;margin-bottom:10px">⚠️</div>
+        <div style="font-size:14px;font-weight:700;color:var(--red)" id="scan-err-msg">No se pudo leer la factura</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.6">Prueba con mejor iluminación o sube el PDF directamente</div>
+      </div>
+      <button class="submit-btn" onclick="resetScan()">Intentar de nuevo</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="cam-input" accept="image/*" capture="environment" class="input-hidden" onchange="handleFile(event)">
+<input type="file" id="file-input" accept="image/*,.pdf,application/pdf" class="input-hidden" onchange="handleFile(event)">
+
+<!-- NEW TX MODAL -->
+<div class="modal-overlay" id="newTxModal" onclick="closeOnBg(event,'newTxModal')">
+  <div class="modal" style="max-height:90dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="newTxTitle">Nuevo <span>Gasto</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Monto (MXN)</label><input class="form-input amount-input" id="f-monto" type="number" inputmode="decimal" placeholder="0.00" step="0.01"></div>
+      <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="f-desc" type="text" placeholder="¿Qué se compró?" autocomplete="off"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Proveedor</label><input class="form-input" id="f-prov" type="text" placeholder="Nombre" list="prov-dl" autocomplete="off"><datalist id="prov-dl"></datalist></div>
+        <div class="form-group"><label class="form-label">Concepto</label>
+          <select class="form-select" id="f-concepto">
+            <option value="CIMENTACION">Cimentación</option><option value="MANO DE OBRA">Mano de Obra</option>
+            <option value="MATERIALES">Materiales</option><option value="ELECTRICO">Eléctrico</option>
+            <option value="HERRAMIENTA">Herramienta / Renta</option><option value="GASTOS OBRA">Gastos de Obra</option>
+            <option value="GASTOS ADMON">Gastos Admón</option><option value="ARCOTECHO">Arcotecho</option>
+            <option value="PLOMERIA">Plomería</option><option value="ESTRUCTURA">Estructura</option><option value="OTRO">Otro</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Obra</label><select class="form-select" id="f-obra"></select></div>
+        <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="f-fecha" type="date"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Método de Pago</label>
+        <div class="method-toggle" style="grid-template-columns:1fr 1fr 1fr">
+          <button class="method-btn active-ef" id="btn-ef" onclick="setMethod('EFECTIVO')">💵 Efectivo</button>
+          <button class="method-btn" id="btn-tr" onclick="setMethod('TRANSFERENCIA')">🏦 Transf.</button>
+          <button class="method-btn" id="btn-tc" onclick="setMethod('TARJETA')">💳 Tarjeta</button>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">No. Factura</label><input class="form-input" id="f-folio" type="text" placeholder="4KAAGJI58439" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">RFC Proveedor</label><input class="form-input" id="f-rfc" type="text" placeholder="HDM001017AS1" autocomplete="off" style="text-transform:uppercase"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Subtotal (sin IVA)</label><input class="form-input" id="f-subtotal" type="number" inputmode="decimal" placeholder="0.00" step="0.01"></div>
+        <div class="form-group"><label class="form-label">IVA</label><input class="form-input" id="f-iva" type="number" inputmode="decimal" placeholder="0.00" step="0.01"></div>
+      </div>
+      <div class="form-group"><label class="form-label">UUID / Folio Fiscal SAT</label><input class="form-input" id="f-uuid" type="text" placeholder="383911C6-…" autocomplete="off" style="font-size:12px"></div>
+      <div class="form-group"><label class="form-label">Nota adicional</label><input class="form-input" id="f-nota" type="text" placeholder="Observaciones"></div>
+      <button class="submit-btn" id="saveTxBtn" onclick="saveTx()">REGISTRAR GASTO</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal" onclick="closeOnBg(event,'detailModal')">
+  <div class="modal" style="max-height:85dvh;overflow-y:auto" id="detailContent"></div>
+</div>
+
+<!-- ADD PROJECT MODAL -->
+<div class="modal-overlay" id="projModal" onclick="closeOnBg(event,'projModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nueva <span>Obra</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nombre de la Obra</label><input class="form-input" id="p-name" type="text" placeholder="Ej: Canchas Padel Norte"></div>
+      <div class="form-group"><label class="form-label">Ubicación (opcional)</label><input class="form-input" id="p-loc" type="text" placeholder="Ej: San Miguel de Allende"></div>
+      <button class="submit-btn" onclick="saveProject()">CREAR OBRA</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOVE MODAL -->
+<div class="modal-overlay" id="moveModal" onclick="closeOnBg(event,'moveModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Mover a otra <span>Obra</span></div>
+    <input type="hidden" id="move-tx-id">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--muted)">
+      Obra actual: <strong style="color:var(--accent)" id="move-from-label"></strong>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Mover a</label>
+        <select class="form-select" id="move-obra-select"></select>
+      </div>
+      <button class="submit-btn" onclick="confirmMove()">🔀 Confirmar traslado</button>
+      <button onclick="document.getElementById('moveModal').classList.remove('open')" style="background:transparent;border:none;color:var(--muted);font-family:var(--font);font-size:13px;cursor:pointer;padding:8px;text-align:center;width:100%">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- DELETE PROJECT MODAL -->
+<div class="modal-overlay" id="delProjModal" onclick="closeOnBg(event,'delProjModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Eliminar <span style="color:var(--red)">Obra</span></div>
+    <input type="hidden" id="del-proj-id">
+    <div style="background:rgba(255,68,68,.08);border:1.5px solid rgba(255,68,68,.25);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="del-proj-name"></div>
+      <div style="font-size:12px;color:var(--muted)">Contiene <strong style="color:var(--text)" id="del-proj-count"></strong></div>
+    </div>
+    <div id="del-proj-warn" style="display:none;background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.3);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--amber);line-height:1.6">
+      ⚠️ Esta obra tiene registros activos. Puedes eliminar solo la obra (los registros quedarán sin obra asignada) o eliminar todo junto.
+    </div>
+    <div id="del-proj-also" style="display:none;align-items:center;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:16px;cursor:pointer" onclick="document.getElementById('del-also-cb').click()">
+      <input type="checkbox" id="del-also-cb" style="width:18px;height:18px;accent-color:var(--red);cursor:pointer">
+      <label for="del-also-cb" style="font-size:13px;font-weight:600;cursor:pointer;color:var(--red)">Eliminar también todos los registros</label>
+    </div>
+    <button class="detail-del-btn" onclick="confirmDeleteProject()" style="margin-bottom:10px">🗑 Confirmar eliminación</button>
+    <button onclick="document.getElementById('delProjModal').classList.remove('open')" style="background:transparent;border:none;color:var(--muted);font-family:var(--font);font-size:13px;cursor:pointer;padding:8px;text-align:center;width:100%">Cancelar</button>
+  </div>
+</div>
+
+
+<!-- MAIL DETAIL MODAL -->
+<div class="modal-overlay" id="mailDetailModal" onclick="closeOnBg(event,'mailDetailModal')">
+  <div class="modal" style="max-height:85dvh;overflow-y:auto" id="mailDetailContent"></div>
+</div>
+
+<!-- GMAIL INSTRUCTIONS MODAL -->
+<div class="modal-overlay" id="gmailInstrModal" onclick="closeOnBg(event,'gmailInstrModal')">
+  <div class="modal" style="max-height:88dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Configurar <span>Google Cloud</span></div>
+    <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.75;color:var(--text)">
+      <div style="background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);border-radius:12px;padding:14px">
+        <strong style="color:var(--accent)">Tiempo estimado: 8-10 minutos · 100% gratuito</strong>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">1</div><div>Ve a <strong style="color:var(--accent)">console.cloud.google.com</strong> e inicia sesión con tu cuenta Google.</div></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">2</div><div>Clic en <strong>"Seleccionar proyecto"</strong> → <strong>"Proyecto nuevo"</strong> → ponle nombre (ej: ObraTrack) → <strong>Crear</strong>.</div></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">3</div><div>En el menú izquierdo: <strong>APIs y servicios → Biblioteca</strong>. Busca <strong>"Gmail API"</strong> y haz clic en <strong>Habilitar</strong>.</div></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">4</div><div><strong>APIs y servicios → Pantalla de consentimiento OAuth</strong>. Elige <strong>Externo</strong> → Crear. Llena nombre de app (ObraTrack) y tu email. Guarda.</div></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">5</div><div>En <strong>Usuarios de prueba</strong> agrega tu correo Gmail. Guarda y continúa.</div></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">6</div><div><strong>Credenciales → Crear credenciales → ID de cliente OAuth</strong>. Tipo de aplicación: <strong>Aplicación web</strong>.</div></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:26px;height:26px;border-radius:50%;background:var(--accent2);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">7</div><div>En <strong>"Orígenes autorizados de JavaScript"</strong> agrega la URL donde usas ObraTrack (ej: <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">https://tudominio.com</code> o <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">http://localhost</code>).</div></div>
+        <div style="display:flex;gap:12px;align-items:flex-start"><div style="width:26px;height:26px;border-radius:50%;background:var(--green);color:#000;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">✓</div><div>Copia el <strong style="color:var(--green)">ID de cliente</strong> que termina en <code style="font-family:var(--mono);font-size:11px">.apps.googleusercontent.com</code> y pégalo en ObraTrack.</div></div>
+      </div>
+      <div style="background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.25);border-radius:10px;padding:12px;font-size:11px;color:var(--amber)">
+        💡 <strong>Yahoo Mail:</strong> Ve a Configuración → Filtros → crea uno que reenvíe automáticamente correos con adjuntos PDF a tu Gmail.
+      </div>
+    </div>
+    <button class="submit-btn" onclick="document.getElementById('gmailInstrModal').classList.remove('open')" style="margin-top:16px;background:var(--surface2);color:var(--text);border:1.5px solid var(--border)">Cerrar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── OAUTH TOKEN CAPTURE ── runs first before anything else
+(function(){
+  try{
+    const h=window.location.hash;
+    if(h&&h.includes('access_token')){
+      const p=new URLSearchParams(h.replace(/^#/,''));
+      const tk=p.get('access_token');
+      if(tk){
+        localStorage.setItem('ot_gmail_token',tk);
+        // Clean URL immediately
+        history.replaceState(null,'',window.location.pathname+window.location.search);
+        // Flag for initGmail to know this is a fresh login
+        sessionStorage.setItem('gmail_just_authed','1');
+      }
+    }
+  }catch(e){}
+})();
+
+const STORE_KEY='obratrack_v2';
+let state=loadState();
+let activeProject=state.projects[0]?.id||null;
+let activeMethod='EFECTIVO';
+let activeFilter='ALL';
+let editingTxId=null;
+let pendingAi=null;
+let pendingFile=null;
+
+function loadState(){
+  try{
+    const s=localStorage.getItem(STORE_KEY);
+    if(s){const p=JSON.parse(s);seedTx(p);return p;}
+  }catch(e){}
+  const d=defaultState();seedTx(d);return d;
+}
+function seedTx(s){
+  if(!s.projects||!s.projects.length) s.projects=defaultState().projects;
+  if(!s.transactions) s.transactions=[];
+  const seeds=[
+    {id:'factura-ams-qrm65670',monto:928,descripcion:'Ángulo aluminio 3/16" x 2½" x 3.66 mts — 1 pz (5.8 kg)',proveedor:'Aluminio y Metales El Socorro',rfcProveedor:'AMS-070920-RH4',concepto:'MATERIALES',obraId:'canchas-padel',fecha:'2026-04-08',metodo:'TARJETA',folio:'QRM 65670',subtotal:800,iva:128,uuid:'52FCA21E-3D8E-4D3E-B83E-C29C77A01E37',nota:'Sucursal Querétaro',createdAt:'2026-04-08T12:50:57.000Z',scanned:false},
+    {id:'factura-homedepot-4kaagji58439',monto:1299,descripcion:'Sika Curador E Cubeta 19L',proveedor:'Home Depot México (Suc. 1170 Corregidora)',rfcProveedor:'HDM001017AS1',concepto:'MATERIALES',obraId:'canchas-padel',fecha:'2026-04-10',metodo:'TARJETA',folio:'4KAAGJI58439',subtotal:1119.83,iva:179.17,uuid:'383911C6-8C19-400F-94BC-EB78BBE8AF5B',nota:'Corregidora, Qro.',createdAt:'2026-04-10T08:25:26.000Z',scanned:false},
+    {id:'factura-caa-7207',monto:17560,descripcion:'80 Bultos Mortero y Cemento Moctezuma 25 kg (40 Mortero + 40 Cemento)',proveedor:'Cementos y Aceros ABCD',rfcProveedor:'CAA2403112M6',concepto:'MATERIALES',obraId:'canchas-padel',fecha:'2026-04-10',metodo:'TRANSFERENCIA',folio:'7207',subtotal:15137.92,iva:2422.08,uuid:'8F7ACDA4-EA0C-4747-BF74-A57D9B65BBA8',nota:'Santiago de Querétaro — Método PUE, Transferencia electrónica',createdAt:'2026-04-10T16:15:06.000Z',scanned:false}
+  ];
+  seeds.forEach(seed=>{
+    const idx=s.transactions.findIndex(t=>t.id===seed.id);
+    if(idx<0) s.transactions.push(seed);
+    else if(s.transactions[idx].obraId!==seed.obraId) s.transactions[idx].obraId=seed.obraId;
+  });
+  localStorage.setItem(STORE_KEY,JSON.stringify(s));
+}
+function defaultState(){return{projects:[{id:'edna-etapa1',name:'EDNA Etapa 1',location:'San Miguel de Allende'},{id:'canchas-padel',name:'Canchas Padel',location:'San Miguel de Allende'},{id:'arcotecho-kinder',name:'Arcotecho Kinder',location:'SMA'}],transactions:[]};}
+function saveState(){localStorage.setItem(STORE_KEY,JSON.stringify(state));}
+
+const fmt=v=>{if(!v&&v!==0)return'$0';if(v>=1e6)return'$'+(v/1e6).toFixed(2)+'M';if(v>=1000)return'$'+(v/1000).toFixed(1)+'k';return'$'+Number(v).toLocaleString('es-MX',{maximumFractionDigits:0});};
+const fmtFull=v=>'$'+Number(v||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today=()=>new Date().toISOString().split('T')[0];
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).substr(2,5);
+const COLORS=['#00d4ff','#ff6b2b','#00e676','#ffc107','#f472b6','#a78bfa','#34d399','#fb923c','#38bdf8','#e879f9'];
+function getWL(d){const dt=new Date(d+'T12:00:00'),s=new Date(dt);s.setDate(dt.getDate()-dt.getDay()+1);return'Sem '+s.toLocaleDateString('es-MX',{day:'2-digit',month:'short'});}
+function fmtBytes(b){if(b<1024)return b+'B';if(b<1048576)return(b/1024).toFixed(0)+'KB';return(b/1048576).toFixed(1)+'MB';}
+
+function switchScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='screen-dash')renderDash();
+  if(id==='screen-list')renderList();
+  if(id==='screen-stats')renderStats();
+  if(id==='screen-export')updateExportLabels();
+  if(id==='screen-gmail')renderMailList();
+}
+function setNav(id){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById(id).classList.add('active');}
+
+function renderProjectBar(){
+  const bar=document.getElementById('projectBar');bar.innerHTML='';
+  state.projects.forEach(p=>{
+    const c=document.createElement('div');
+    c.className='proj-chip'+(p.id===activeProject?' active':'');
+    c.textContent=p.name;
+    c.onclick=()=>{activeProject=p.id;renderProjectBar();renderDash();renderList();};
+    // Long-press to open delete options
+    let pressTimer;
+    c.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>openDeleteProject(p.id),600);},{passive:true});
+    c.addEventListener('touchend',()=>clearTimeout(pressTimer),{passive:true});
+    c.addEventListener('touchmove',()=>clearTimeout(pressTimer),{passive:true});
+    // Right-click on desktop
+    c.addEventListener('contextmenu',(e)=>{e.preventDefault();openDeleteProject(p.id);});
+    bar.appendChild(c);
+  });
+  const a=document.createElement('div');a.className='proj-chip add-chip';a.textContent='＋ Obra';a.onclick=openAddProject;bar.appendChild(a);
+}
+
+function renderDash(){
+  renderProjectBar();
+  const proj=state.projects.find(p=>p.id===activeProject);
+  document.getElementById('dash-subtitle').textContent=proj?proj.name+(proj.location?' · '+proj.location:''):'Haus Laak';
+  const txs=state.transactions.filter(t=>t.obraId===activeProject);
+  const total=txs.reduce((s,t)=>s+(t.monto||0),0);
+  const ef=txs.filter(t=>t.metodo==='EFECTIVO').reduce((s,t)=>s+t.monto,0);
+  const tr=txs.filter(t=>t.metodo==='TRANSFERENCIA').reduce((s,t)=>s+t.monto,0);
+  const wa=new Date(Date.now()-7*86400000);
+  const wt=txs.filter(t=>t.fecha&&new Date(t.fecha+'T12:00:00')>=wa);
+  document.getElementById('kpi-total').textContent=fmt(total);
+  document.getElementById('kpi-txcount').textContent=txs.length+' registros';
+  document.getElementById('kpi-week').textContent=fmt(wt.reduce((s,t)=>s+t.monto,0));
+  document.getElementById('kpi-weekcount').textContent=wt.length+' mov.';
+  document.getElementById('kpi-ef').textContent=fmt(ef);
+  document.getElementById('kpi-tr').textContent=fmt(tr);
+  renderMiniChart(txs);renderConceptBars(txs,'conceptList',5);renderRecent(txs);
+}
+
+function renderMiniChart(txs){
+  const c=document.getElementById('miniChart');c.innerHTML='';
+  const days=[];for(let i=7;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const k=d.toISOString().split('T')[0];days.push({k,l:d.toLocaleDateString('es-MX',{weekday:'short'}).slice(0,3),s:txs.filter(t=>t.fecha===k).reduce((s,t)=>s+t.monto,0)});}
+  const max=Math.max(...days.map(d=>d.s),1),tk=today();
+  days.forEach(d=>{const w=document.createElement('div');w.className='chart-bar-wrap';const f=document.createElement('div');f.className='chart-bar-fill'+(d.k===tk?' active-bar':'');f.style.height=Math.max((d.s/max)*54,d.s>0?4:0)+'px';const l=document.createElement('div');l.className='chart-bar-label';l.textContent=d.l;w.appendChild(f);w.appendChild(l);c.appendChild(w);});
+}
+
+function renderConceptBars(txs,cid,limit){
+  const c=document.getElementById(cid);c.innerHTML='';
+  const map={};txs.forEach(t=>{map[t.concepto]=(map[t.concepto]||0)+t.monto;});
+  const sorted=Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,limit||20);
+  if(!sorted.length){c.innerHTML='<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Sin registros aún</div></div>';return;}
+  const max=sorted[0][1];
+  sorted.forEach(([name,sum],i)=>{const r=document.createElement('div');r.className='concept-row';r.innerHTML=`<div class="concept-dot" style="background:${COLORS[i%COLORS.length]}"></div><div class="concept-name">${name}</div><div class="concept-bar-wrap"><div class="concept-bar-inner" style="width:${(sum/max*100).toFixed(0)}%;background:${COLORS[i%COLORS.length]}"></div></div><div class="concept-amount">${fmt(sum)}</div>`;c.appendChild(r);});
+}
+
+function renderRecent(txs){
+  const c=document.getElementById('recentList');c.innerHTML='';
+  const sorted=[...txs].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5);
+  if(!sorted.length){c.innerHTML='<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">Sin movimientos. Toca + para registrar.</div></div>';return;}
+  sorted.forEach((t,i)=>c.appendChild(makeTxItem(t,i)));
+}
+
+function renderList(){
+  const proj=state.projects.find(p=>p.id===activeProject);
+  document.getElementById('list-subtitle').textContent=proj?proj.name:'todos';
+  const search=document.getElementById('searchInput').value.toLowerCase();
+  let txs=state.transactions.filter(t=>t.obraId===activeProject);
+  if(activeFilter==='AI')txs=txs.filter(t=>t.scanned);
+  else if(activeFilter!=='ALL')txs=txs.filter(t=>t.metodo===activeFilter);
+  if(search)txs=txs.filter(t=>(t.descripcion||'').toLowerCase().includes(search)||(t.proveedor||'').toLowerCase().includes(search)||(t.concepto||'').toLowerCase().includes(search));
+  txs=[...txs].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const c=document.getElementById('fullList');c.innerHTML='';
+  if(!txs.length){c.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Sin resultados</div></div>';return;}
+  txs.forEach((t,i)=>c.appendChild(makeTxItem(t,i)));
+}
+
+function setFilter(el,val){activeFilter=val;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');renderList();}
+
+const ICONS={CIMENTACION:'🪨','MANO DE OBRA':'👷',MATERIALES:'🧱',ELECTRICO:'⚡',HERRAMIENTA:'🔧','GASTOS OBRA':'🏗️','GASTOS ADMON':'📋',ARCOTECHO:'🏠',PLOMERIA:'🚿',ESTRUCTURA:'🔩',OTRO:'📦'};
+const BGMAP={CIMENTACION:'rgba(251,146,60,.18)','MANO DE OBRA':'rgba(0,230,118,.18)',MATERIALES:'rgba(0,212,255,.18)',ELECTRICO:'rgba(255,193,7,.18)',HERRAMIENTA:'rgba(167,139,250,.18)','GASTOS OBRA':'rgba(244,114,182,.18)','GASTOS ADMON':'rgba(52,211,153,.18)',ARCOTECHO:'rgba(56,189,248,.18)',PLOMERIA:'rgba(129,140,248,.18)',ESTRUCTURA:'rgba(248,113,113,.18)',OTRO:'rgba(148,163,184,.18)'};
+function getBadge(m){if(m==='EFECTIVO')return'<span class="tx-badge badge-ef">EFVO</span>';if(m==='TARJETA')return'<span class="tx-badge badge-tc">TARJETA</span>';return'<span class="tx-badge badge-tr">TRANSF</span>';}
+
+function makeTxItem(t,i){
+  const el=document.createElement('div');el.className='tx-item';el.style.animationDelay=Math.min(i*.04,.3)+'s';
+  const icon=ICONS[t.concepto]||'📦',bg=BGMAP[t.concepto]||'rgba(100,116,139,.15)';
+  const fp=t.folio?`<span style="font-size:9px;background:rgba(0,212,255,.1);color:var(--accent);padding:1px 6px;border-radius:4px;font-family:var(--mono)">${t.folio}</span>`:'';
+  const ap=t.scanned?'<span class="tx-badge badge-ai">✨IA</span>':'';
+  el.onclick=()=>openDetail(t.id);
+  el.innerHTML=`<div class="tx-icon" style="background:${bg}">${icon}</div><div class="tx-info"><div class="tx-desc">${t.descripcion||'—'}</div><div class="tx-meta">${getBadge(t.metodo)}${ap}<span>${t.proveedor||''}</span>${fp}<span>${t.fecha||''}</span></div></div><div class="tx-amount">${fmtFull(t.monto)}</div>`;
+  return el;
+}
+
+function openDetail(id){
+  const t=state.transactions.find(x=>x.id===id);if(!t)return;
+  const proj=state.projects.find(p=>p.id===t.obraId);
+  const icon=ICONS[t.concepto]||'📦',bg=BGMAP[t.concepto]||'rgba(100,116,139,.15)';
+  let fiscal='';
+  if(t.folio||t.rfcProveedor||t.uuid||t.subtotal!=null)
+    fiscal=`<div class="detail-section"><div class="detail-section-title">📄 Datos Fiscales</div>${t.folio?`<div class="detail-row"><span class="detail-key">No. Factura</span><span class="detail-val accent">${t.folio}</span></div>`:''} ${t.rfcProveedor?`<div class="detail-row"><span class="detail-key">RFC Proveedor</span><span class="detail-val mono">${t.rfcProveedor}</span></div>`:''} ${t.subtotal!=null?`<div class="detail-row"><span class="detail-key">Subtotal</span><span class="detail-val mono">${fmtFull(t.subtotal)}</span></div>`:''} ${t.iva!=null?`<div class="detail-row"><span class="detail-key">IVA (16%)</span><span class="detail-val mono">${fmtFull(t.iva)}</span></div>`:''} ${t.uuid?`<div class="detail-row" style="flex-direction:column;gap:6px"><span class="detail-key">UUID SAT</span><div class="uuid-chip">${t.uuid}</div></div>`:''}</div>`;
+  let fileS='';
+  if(t.attachedFile)
+    fileS=`<div class="detail-section"><div class="detail-section-title">📎 Archivo Adjunto</div><div class="file-thumb" onclick="openAttachment('${id}')"><span class="file-thumb-icon">${t.attachedFile.type==='application/pdf'?'📄':'🖼️'}</span><span class="file-thumb-name">${t.attachedFile.name}</span><span class="file-thumb-size">${fmtBytes(t.attachedFile.size||0)}</span></div></div>`;
+  document.getElementById('detailContent').innerHTML=`
+    <div class="modal-handle"></div>
+    <div style="text-align:center">
+      <div style="width:56px;height:56px;border-radius:16px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 8px">${icon}</div>
+      ${t.scanned?'<div style="font-size:10px;color:#a78bfa;font-weight:700;letter-spacing:1.5px;margin-bottom:4px">✨ REGISTRADO CON IA</div>':''}
+      <div class="detail-amount-big">${fmtFull(t.monto)}</div>
+      <div class="detail-concept-badge">${icon} ${t.concepto||'SIN CONCEPTO'}</div>
+    </div>
+    <div class="detail-section"><div class="detail-section-title">📋 Detalle del Gasto</div>
+      <div class="detail-row"><span class="detail-key">Descripción</span><span class="detail-val">${t.descripcion||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Proveedor</span><span class="detail-val">${t.proveedor||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Fecha</span><span class="detail-val">${t.fecha||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Método de Pago</span><span class="detail-val">${getBadge(t.metodo)} ${t.metodo||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Obra</span><span class="detail-val green">${proj?.name||t.obraId||'—'}</span></div>
+      ${t.nota?`<div class="detail-row"><span class="detail-key">Nota</span><span class="detail-val">${t.nota}</span></div>`:''}
+    </div>
+    ${fiscal}${fileS}
+    <div class="detail-section"><div class="detail-section-title">🕐 Registro</div>
+      <div class="detail-row"><span class="detail-key">Registrado</span><span class="detail-val mono" style="font-size:10px">${new Date(t.createdAt).toLocaleString('es-MX')}</span></div>
+    </div>
+    <button class="submit-btn" onclick="openEditFromDetail('${id}')" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border);margin-bottom:8px">✏️ Editar registro</button>
+    <button class="submit-btn" onclick="openMoveModal('${id}')" style="background:rgba(0,212,255,.1);color:var(--accent);border:1.5px solid rgba(0,212,255,.3);margin-bottom:8px">🔀 Mover a otra obra</button>
+    <button class="detail-del-btn" onclick="delTx('${id}')">🗑 Eliminar este registro</button>`;
+  document.getElementById('detailModal').classList.add('open');
+}
+
+function openAttachment(id){
+  const t=state.transactions.find(x=>x.id===id);
+  if(!t?.attachedFile?.base64)return;
+  const a=document.createElement('a');a.href='data:'+t.attachedFile.type+';base64,'+t.attachedFile.base64;a.download=t.attachedFile.name||'factura';a.click();
+}
+
+function delTx(id){
+  if(confirm('¿Eliminar este registro?')){
+    state.transactions=state.transactions.filter(t=>t.id!==id);saveState();
+    document.getElementById('detailModal').classList.remove('open');renderDash();renderList();showToast('Registro eliminado');
+  }
+}
+
+function openEditFromDetail(id){
+  const t=state.transactions.find(x=>x.id===id);if(!t)return;
+  editingTxId=id;
+  document.getElementById('detailModal').classList.remove('open');
+  openNewTx(t);
+}
+
+function openMoveModal(id){
+  const t=state.transactions.find(x=>x.id===id);if(!t)return;
+  const sel=document.getElementById('move-obra-select');
+  sel.innerHTML=state.projects.filter(p=>p.id!==t.obraId).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  document.getElementById('move-tx-id').value=id;
+  const curProj=state.projects.find(p=>p.id===t.obraId);
+  document.getElementById('move-from-label').textContent=curProj?curProj.name:t.obraId;
+  document.getElementById('detailModal').classList.remove('open');
+  document.getElementById('moveModal').classList.add('open');
+}
+
+function confirmMove(){
+  const id=document.getElementById('move-tx-id').value;
+  const newObraId=document.getElementById('move-obra-select').value;
+  if(!id||!newObraId)return;
+  const idx=state.transactions.findIndex(t=>t.id===id);
+  if(idx<0)return;
+  const destProj=state.projects.find(p=>p.id===newObraId);
+  state.transactions[idx].obraId=newObraId;
+  state.transactions[idx].updatedAt=new Date().toISOString();
+  saveState();
+  document.getElementById('moveModal').classList.remove('open');
+  renderDash();renderList();
+  showToast('✅ Movido a: '+(destProj?.name||newObraId));
+}
+
+function renderStats(){
+  const txs=state.transactions.filter(t=>t.obraId===activeProject);
+  const total=txs.reduce((s,t)=>s+(t.monto||0),0);
+  const ef=txs.filter(t=>t.metodo==='EFECTIVO').reduce((s,t)=>s+t.monto,0);
+  const tr=txs.filter(t=>t.metodo==='TRANSFERENCIA').reduce((s,t)=>s+t.monto,0);
+  const tc=txs.filter(t=>t.metodo==='TARJETA').reduce((s,t)=>s+t.monto,0);
+  document.getElementById('statsGrid').innerHTML=`<div class="stat-card"><div class="stat-number" style="color:var(--accent)">${fmtFull(total)}</div><div class="stat-label">Total Acumulado</div></div><div class="stat-card"><div class="stat-number" style="color:var(--accent2)">${txs.length}</div><div class="stat-label">Transacciones</div></div><div class="stat-card"><div class="stat-number" style="color:var(--green)">${fmtFull(ef)}</div><div class="stat-label">Efectivo</div></div><div class="stat-card"><div class="stat-number" style="color:var(--amber)">${fmtFull(tr)}</div><div class="stat-label">Transferencia</div></div><div class="stat-card"><div class="stat-number" style="color:var(--accent)">${fmtFull(tc)}</div><div class="stat-label">Tarjeta</div></div><div class="stat-card"><div class="stat-number" style="color:var(--muted)">${txs.length?fmtFull(total/txs.length):'$0'}</div><div class="stat-label">Promedio / Gasto</div></div>`;
+  const pm={};txs.forEach(t=>{pm[t.proveedor||'Sin proveedor']=(pm[t.proveedor||'Sin proveedor']||0)+t.monto;});
+  document.getElementById('provList').innerHTML=Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([n,s],i)=>`<div class="prov-row"><span class="prov-rank">${i+1}</span><span class="prov-name">${n}</span><span class="prov-amount">${fmtFull(s)}</span></div>`).join('');
+  renderConceptBars(txs,'statsConceptList',15);
+}
+
+function updateExportLabels(){const p=state.projects.find(p=>p.id===activeProject);document.getElementById('export-proj-name').textContent=p?'Obra: '+p.name:'';}
+
+function exportExcel(mode){
+  const wb=XLSX.utils.book_new();
+  let txs=state.transactions;if(mode==='project')txs=txs.filter(t=>t.obraId===activeProject);
+  const rows=txs.map(t=>({'FECHA':t.fecha||'','DESCRIPCION':t.descripcion||'','PROVEEDOR':t.proveedor||'','RFC':t.rfcProveedor||'','CONCEPTO':t.concepto||'','SUBTOTAL':t.subtotal||'','IVA':t.iva||'','TOTAL':t.monto||0,'METODO':t.metodo||'','FOLIO':t.folio||'','UUID':t.uuid||'','OBRA':state.projects.find(p=>p.id===t.obraId)?.name||t.obraId||'','NOTA':t.nota||'','SEMANA':t.fecha?getWL(t.fecha):'','IA':t.scanned?'SÍ':'NO'}));
+  const ws=XLSX.utils.json_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb,ws,'GASTOS');
+  if(mode!=='weekly'){
+    const cm={};txs.forEach(t=>{cm[t.concepto]=(cm[t.concepto]||0)+(t.monto||0);});
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(Object.entries(cm).sort((a,b)=>b[1]-a[1]).map(([c,s])=>({CONCEPTO:c,TOTAL:s}))),'POR CONCEPTO');
+    const pm={};txs.forEach(t=>{pm[t.proveedor||'SIN']=(pm[t.proveedor||'SIN']||0)+(t.monto||0);});
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(Object.entries(pm).sort((a,b)=>b[1]-a[1]).map(([p,s])=>({PROVEEDOR:p,TOTAL:s}))),'POR PROVEEDOR');
+  }
+  const wm={};txs.forEach(t=>{if(!t.fecha)return;const w=getWL(t.fecha);if(!wm[w])wm[w]={ef:0,tr:0,total:0,count:0};wm[w].total+=t.monto||0;wm[w].count++;if(t.metodo==='EFECTIVO')wm[w].ef+=t.monto||0;else wm[w].tr+=t.monto||0;});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(Object.entries(wm).map(([w,v])=>({SEMANA:w,EFECTIVO:v.ef,TRANSFERENCIA:v.tr,TOTAL:v.total,REGISTROS:v.count}))),'POR SEMANA');
+  const p=state.projects.find(p=>p.id===activeProject);
+  XLSX.writeFile(wb,(mode==='all'?'ObraTrack_Completo':mode==='weekly'?'ObraTrack_Semanas':'ObraTrack_'+(p?.name||'Obra').replace(/\s+/g,'_'))+'_'+today()+'.xlsx');
+  showToast('✅ Excel descargado');
+}
+
+// FORM
+function openNewTx(pre){
+  editingTxId=pre?.id||null;
+  document.getElementById('f-obra').innerHTML=state.projects.map(p=>`<option value="${p.id}"${p.id===activeProject?' selected':''}>${p.name}</option>`).join('');
+  document.getElementById('prov-dl').innerHTML=[...new Set(state.transactions.map(t=>t.proveedor).filter(Boolean))].map(p=>`<option value="${p}">`).join('');
+  if(pre){
+    document.getElementById('newTxTitle').innerHTML='Editar <span>Gasto</span>';
+    document.getElementById('saveTxBtn').textContent='GUARDAR CAMBIOS';
+    document.getElementById('f-monto').value=pre.monto||'';
+    document.getElementById('f-desc').value=pre.descripcion||'';
+    document.getElementById('f-prov').value=pre.proveedor||'';
+    document.getElementById('f-nota').value=pre.nota||'';
+    document.getElementById('f-folio').value=pre.folio||'';
+    document.getElementById('f-rfc').value=pre.rfcProveedor||'';
+    document.getElementById('f-subtotal').value=pre.subtotal||'';
+    document.getElementById('f-iva').value=pre.iva||'';
+    document.getElementById('f-uuid').value=pre.uuid||'';
+    document.getElementById('f-fecha').value=pre.fecha||today();
+    document.getElementById('f-concepto').value=pre.concepto||'MATERIALES';
+    if(pre.obraId)document.getElementById('f-obra').value=pre.obraId;
+    setMethod(pre.metodo||'EFECTIVO');
+  }else{
+    document.getElementById('newTxTitle').innerHTML='Nuevo <span>Gasto</span>';
+    document.getElementById('saveTxBtn').textContent='REGISTRAR GASTO';
+    ['f-monto','f-desc','f-prov','f-nota','f-folio','f-rfc','f-subtotal','f-iva','f-uuid'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('f-fecha').value=today();
+    setMethod('EFECTIVO');
+  }
+  document.getElementById('newTxModal').classList.add('open');
+  setTimeout(()=>document.getElementById('f-monto').focus(),300);
+}
+
+function setMethod(m){activeMethod=m;document.getElementById('btn-ef').className='method-btn'+(m==='EFECTIVO'?' active-ef':'');document.getElementById('btn-tr').className='method-btn'+(m==='TRANSFERENCIA'?' active-tr':'');document.getElementById('btn-tc').className='method-btn'+(m==='TARJETA'?' active-tr':'');}
+
+function saveTx(){
+  const monto=parseFloat(document.getElementById('f-monto').value);
+  const desc=document.getElementById('f-desc').value.trim();
+  if(!monto||monto<=0){shakeInput('f-monto');return;}
+  if(!desc){shakeInput('f-desc');return;}
+  const sub=parseFloat(document.getElementById('f-subtotal').value)||null;
+  const iva=parseFloat(document.getElementById('f-iva').value)||null;
+  const fields={monto,descripcion:desc,proveedor:document.getElementById('f-prov').value.trim(),concepto:document.getElementById('f-concepto').value,obraId:document.getElementById('f-obra').value,fecha:document.getElementById('f-fecha').value,metodo:activeMethod,nota:document.getElementById('f-nota').value.trim(),folio:document.getElementById('f-folio').value.trim(),rfcProveedor:document.getElementById('f-rfc').value.trim().toUpperCase(),subtotal:sub,iva,uuid:document.getElementById('f-uuid').value.trim().toUpperCase()};
+  if(editingTxId){
+    const idx=state.transactions.findIndex(t=>t.id===editingTxId);
+    if(idx>=0) state.transactions[idx]={...state.transactions[idx],...fields,updatedAt:new Date().toISOString()};
+    editingTxId=null;
+    showToast('✅ Registro actualizado');
+  }else{
+    const tx={id:uid(),...fields,scanned:!!pendingFile,attachedFile:pendingFile||null,createdAt:new Date().toISOString()};
+    state.transactions.push(tx);
+    pendingFile=null;
+    showToast('✅ Gasto registrado: '+fmt(monto));
+  }
+  saveState();document.getElementById('newTxModal').classList.remove('open');renderDash();renderList();
+}
+
+function shakeInput(id){const el=document.getElementById(id);el.style.borderColor='var(--red)';el.style.animation='none';el.offsetHeight;el.style.animation='shake .3s ease';setTimeout(()=>{el.style.borderColor='';el.style.animation='';},600);}
+
+function openAddProject(){document.getElementById('p-name').value='';document.getElementById('p-loc').value='';document.getElementById('projModal').classList.add('open');setTimeout(()=>document.getElementById('p-name').focus(),300);}
+function saveProject(){
+  const name=document.getElementById('p-name').value.trim();if(!name){shakeInput('p-name');return;}
+  const id=name.toLowerCase().replace(/\s+/g,'-')+'-'+Date.now().toString(36);
+  state.projects.push({id,name,location:document.getElementById('p-loc').value.trim()});
+  activeProject=id;saveState();document.getElementById('projModal').classList.remove('open');renderDash();showToast('✅ Obra creada: '+name);
+}
+
+function openDeleteProject(id){
+  const p=state.projects.find(x=>x.id===id);if(!p)return;
+  const txCount=state.transactions.filter(t=>t.obraId===id).length;
+  document.getElementById('del-proj-name').textContent=p.name;
+  document.getElementById('del-proj-count').textContent=txCount+' registro'+(txCount!==1?'s':'');
+  document.getElementById('del-proj-id').value=id;
+  // Show/hide warning if has transactions
+  document.getElementById('del-proj-warn').style.display=txCount>0?'block':'none';
+  document.getElementById('del-proj-also').style.display=txCount>0?'flex':'none';
+  document.getElementById('del-also-cb').checked=false;
+  document.getElementById('delProjModal').classList.add('open');
+}
+
+function confirmDeleteProject(){
+  const id=document.getElementById('del-proj-id').value;
+  const alsoTx=document.getElementById('del-also-cb').checked;
+  if(!id)return;
+  if(state.projects.length<=1){showToast('⚠️ Debe quedar al menos una obra',true);return;}
+  state.projects=state.projects.filter(p=>p.id!==id);
+  if(alsoTx) state.transactions=state.transactions.filter(t=>t.obraId!==id);
+  // Switch to first remaining project
+  if(activeProject===id) activeProject=state.projects[0].id;
+  saveState();
+  document.getElementById('delProjModal').classList.remove('open');
+  renderDash();renderList();
+  showToast(alsoTx?'🗑 Obra y registros eliminados':'🗑 Obra eliminada');
+}
+
+// SCAN / AI
+function openScan(){resetScan();document.getElementById('scanModal').classList.add('open');}
+function triggerCapture(mode){if(mode==='camera')document.getElementById('cam-input').click();else document.getElementById('file-input').click();}
+
+function resetScan(){
+  ['scan-pick','scan-loading','scan-result','scan-error'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('scan-pick').style.display='block';
+  pendingAi=null;
+}
+
+async function handleFile(e){
+  const file=e.target.files[0];e.target.value='';
+  if(!file)return;
+  document.getElementById('scan-pick').style.display='none';
+  document.getElementById('scan-loading').style.display='block';
+  const msgs=['Leyendo el CFDI…','Extrayendo datos fiscales…','Identificando proveedor…','Verificando montos…'];
+  let mi=0;const mEl=document.getElementById('ai-msg');
+  const iv=setInterval(()=>{mi=(mi+1)%msgs.length;mEl.textContent=msgs[mi];},1800);
+  try{
+    const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result.split(',')[1]);r.onerror=()=>rej(new Error('Error leyendo archivo'));r.readAsDataURL(file);});
+    const isPDF=file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf');
+    pendingFile={name:file.name,type:file.type,base64,size:file.size};
+    const result=await callClaudeOCR(base64,isPDF,file.type);
+    clearInterval(iv);
+    if(!result)throw new Error('No se pudo extraer información');
+    pendingAi=result;showAiResult(result);
+  }catch(err){
+    clearInterval(iv);
+    document.getElementById('scan-loading').style.display='none';
+    document.getElementById('scan-error').style.display='block';
+    document.getElementById('scan-err-msg').textContent=err.message||'No se pudo leer la factura';
+  }
+}
+
+async function callClaudeOCR(base64,isPDF,mimeType){
+  const mt=isPDF?'application/pdf':(mimeType||'image/jpeg');
+  const prompt=`Eres un extractor de datos de facturas mexicanas CFDI. Analiza este documento y extrae TODOS los campos disponibles.
+
+RESPONDE ÚNICAMENTE con JSON válido, sin markdown ni texto adicional:
+{
+  "descripcion": "descripción del producto/servicio principal (máx 80 chars, concisa)",
+  "proveedor": "nombre del emisor",
+  "rfcProveedor": "RFC del emisor",
+  "monto": número total con IVA,
+  "subtotal": número base sin IVA,
+  "iva": número del IVA,
+  "folio": "serie y folio",
+  "uuid": "folio fiscal UUID SAT",
+  "fecha": "YYYY-MM-DD",
+  "metodo": "TARJETA" o "TRANSFERENCIA" o "EFECTIVO",
+  "concepto": "MATERIALES" o "MANO DE OBRA" o "ELECTRICO" o "PLOMERIA" o "ESTRUCTURA" o "CIMENTACION" o "HERRAMIENTA" o "GASTOS OBRA" o "GASTOS ADMON" o "ARCOTECHO" o "OTRO",
+  "nota": "sucursal u observación breve o null"
+}
+Infiere el concepto del tipo de producto. Campos no disponibles: null.`;
+  const body={model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[isPDF?{type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}}:{type:'image',source:{type:'base64',media_type:mt,data:base64}},{type:'text',text:prompt}]}]};
+  const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
+  if(!res.ok)throw new Error('Error de IA ('+res.status+'). Verifica tu conexión.');
+  const data=await res.json();
+  const text=data.content?.map(c=>c.text||'').join('').trim();
+  if(!text)throw new Error('Respuesta vacía de la IA');
+  return JSON.parse(text.replace(/```json|```/g,'').trim());
+}
+
+function showAiResult(d){
+  document.getElementById('scan-loading').style.display='none';
+  document.getElementById('scan-result').style.display='block';
+  const proj=state.projects.find(p=>p.id===activeProject);
+  const rows=[['Monto Total',d.monto!=null?fmtFull(d.monto):null],['Subtotal',d.subtotal!=null?fmtFull(d.subtotal):null],['IVA',d.iva!=null?fmtFull(d.iva):null],['Descripción',d.descripcion],['Proveedor',d.proveedor],['RFC',d.rfcProveedor],['Folio',d.folio],['Fecha',d.fecha],['Método',d.metodo],['Concepto',d.concepto]].filter(([,v])=>v);
+  document.getElementById('aiResultBox').innerHTML=`<div class="ai-result-header"><span style="font-size:16px">✨</span><span class="ai-result-badge">Lectura completada</span></div><div class="ai-result-rows">${rows.map(([k,v])=>`<div class="ai-result-row"><span class="ai-result-key">${k}</span><span class="ai-result-val">${v}</span></div>`).join('')}</div>${proj?`<div style="font-size:10px;color:var(--muted);margin-top:10px;text-align:center">Obra: <strong style="color:var(--accent)">${proj.name}</strong></div>`:''}`;
+}
+
+function confirmAi(){
+  if(!pendingAi)return;
+  const d=pendingAi;
+  const tx={id:uid(),monto:d.monto||0,descripcion:d.descripcion||'',proveedor:d.proveedor||'',rfcProveedor:(d.rfcProveedor||'').toUpperCase(),concepto:d.concepto||'MATERIALES',obraId:activeProject,fecha:d.fecha||today(),metodo:d.metodo||'EFECTIVO',folio:d.folio||'',subtotal:d.subtotal||null,iva:d.iva||null,uuid:(d.uuid||'').toUpperCase(),nota:d.nota||'',scanned:true,attachedFile:pendingFile||null,createdAt:new Date().toISOString()};
+  state.transactions.push(tx);saveState();
+  pendingAi=null;pendingFile=null;
+  document.getElementById('scanModal').classList.remove('open');
+  renderDash();renderList();
+  showToast('✅ Factura registrada: '+fmt(tx.monto));
+}
+
+function editAi(){
+  if(!pendingAi)return;
+  document.getElementById('scanModal').classList.remove('open');
+  const d=pendingAi;
+  openNewTx({descripcion:d.descripcion,proveedor:d.proveedor,rfcProveedor:d.rfcProveedor,monto:d.monto,subtotal:d.subtotal,iva:d.iva,folio:d.folio,uuid:d.uuid,fecha:d.fecha,metodo:d.metodo||'EFECTIVO',concepto:d.concepto||'MATERIALES',nota:d.nota,obraId:activeProject});
+  // pendingFile stays for attachment
+}
+
+function closeOnBg(e,id){if(e.target.classList.contains('modal-overlay'))document.getElementById(id).classList.remove('open');}
+
+function showToast(msg,isErr){
+  const t=document.getElementById('toast');t.textContent=msg;
+  t.className='toast'+(isErr?' error':'');t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+const sEl=document.createElement('style');sEl.textContent='@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}';document.head.appendChild(sEl);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));});
+
+function exportJSON(){const b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const url=URL.createObjectURL(b);const a=document.createElement('a');a.href=url;a.download='ObraTrack_Respaldo_'+today()+'.json';a.click();URL.revokeObjectURL(url);showToast('✅ Respaldo descargado');}
+function importJSON(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{try{const imp=JSON.parse(e.target.result);if(!imp.projects||!imp.transactions)throw 0;const ids=new Set(state.transactions.map(t=>t.id));const nT=imp.transactions.filter(t=>!ids.has(t.id));const pids=new Set(state.projects.map(p=>p.id));const nP=imp.projects.filter(p=>!pids.has(p.id));state.transactions=[...state.transactions,...nT];state.projects=[...state.projects,...nP];saveState();renderDash();renderList();showToast(`✅ ${nT.length} registros, ${nP.length} obras importadas`);}catch{showToast('❌ Archivo inválido',true);}};
+  r.readAsText(file);ev.target.value='';
+}
+
+// ONEDRIVE
+const OD_CLIENT_ID='14d82eec-204b-4c2f-b7e8-296a70dab67e',OD_FILE='ObraTrack_datos.json',OD_FOLDER='ObraTrack',OD_SCOPES='Files.ReadWrite offline_access User.Read';
+let odToken=localStorage.getItem('ot_od_token')||null,odUser=localStorage.getItem('ot_od_user')||null;
+(function(){const h=window.location.hash;if(!h.includes('access_token'))return;const p=new URLSearchParams(h.replace('#',''));const tk=p.get('access_token');if(!tk)return;odToken=tk;localStorage.setItem('ot_od_token',tk);history.replaceState(null,'',window.location.pathname+window.location.search);fetch('https://graph.microsoft.com/v1.0/me',{headers:{Authorization:'Bearer '+tk}}).then(r=>r.json()).then(u=>{odUser=u.userPrincipalName||u.mail||u.displayName||'Microsoft';localStorage.setItem('ot_od_user',odUser);odUpdateUI(true);showToast('✅ Conectado: '+odUser);odSave();}).catch(()=>odUpdateUI(true));})();
+function initOD(){odToken&&odUser?odUpdateUI(true):odUpdateUI(false);}
+function odLogin(){const rd=window.location.href.split('?')[0].split('#')[0];window.location.href='https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id='+OD_CLIENT_ID+'&response_type=token&redirect_uri='+encodeURIComponent(rd)+'&scope='+encodeURIComponent(OD_SCOPES)+'&response_mode=fragment';}
+async function odSave(){if(!odToken){showToast('Primero conecta tu cuenta',true);return;}odUpdateStatus('syncing',odUser||'Microsoft','Guardando...');try{const r=await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${OD_FOLDER}/${OD_FILE}:/content`,{method:'PUT',headers:{Authorization:'Bearer '+odToken,'Content-Type':'application/json'},body:JSON.stringify(state)});if(r.status===401){odExpired();return;}if(!r.ok)throw new Error('HTTP '+r.status);odUpdateStatus('connected',odUser,'Guardado '+new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})+' · '+state.transactions.length+' registros');showToast('✅ Guardado en OneDrive');}catch(e){odUpdateStatus('connected',odUser,'Error');showToast('❌ Error al guardar',true);}}
+async function odLoad(){if(!odToken){showToast('Primero conecta tu cuenta',true);return;}odUpdateStatus('syncing',odUser||'Microsoft','Cargando...');try{const r=await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${OD_FOLDER}/${OD_FILE}:/content`,{headers:{Authorization:'Bearer '+odToken}});if(r.status===401){odExpired();return;}if(r.status===404){odUpdateStatus('connected',odUser,'Sin respaldo previo');showToast('⚠️ No hay respaldo guardado aún');return;}if(!r.ok)throw new Error();const imp=await r.json();const ids=new Set(state.transactions.map(t=>t.id));const nT=imp.transactions.filter(t=>!ids.has(t.id));const pids=new Set(state.projects.map(p=>p.id));const nP=imp.projects.filter(p=>!pids.has(p.id));state.transactions=[...state.transactions,...nT];state.projects=[...state.projects,...nP];saveState();renderDash();renderList();odUpdateStatus('connected',odUser,'Sincronizado · '+state.transactions.length+' registros');showToast(`✅ ${nT.length} registros nuevos cargados`);}catch{odUpdateStatus('connected',odUser,'Error al cargar');showToast('❌ Error al cargar',true);}}
+function odLogout(){odToken=null;odUser=null;localStorage.removeItem('ot_od_token');localStorage.removeItem('ot_od_user');odUpdateUI(false);showToast('Sesión cerrada');}
+function odExpired(){odToken=null;localStorage.removeItem('ot_od_token');odUpdateUI(false);showToast('⚠️ Sesión expirada, reconecta',true);}
+function odUpdateUI(c){const t=c?(odUser||'Microsoft'):'No conectado',s=c?'OneDrive listo · '+state.transactions.length+' registros':'Inicia sesión con tu cuenta Microsoft';odUpdateStatus(c?'connected':'disconnected',t,s);document.getElementById('btn-od-login').style.display=c?'none':'flex';document.getElementById('btn-od-save').style.display=c?'flex':'none';document.getElementById('btn-od-load').style.display=c?'flex':'none';document.getElementById('btn-od-logout').style.display=c?'flex':'none';}
+function odUpdateStatus(cls,text,sub){document.getElementById('od-dot').className='od-dot '+cls;document.getElementById('od-text').textContent=text;document.getElementById('od-sub').textContent=sub;}
+
+// INIT
+if(!activeProject&&state.projects.length)activeProject=state.projects[0].id;
+initOD();renderDash();
+// Gmail init must run after DOM is ready and renderDash has been called
+window.addEventListener('load', initGmail);
+
+
+// ═══════════════════════════════════════════════════════
+// GMAIL INTEGRATION
+// ═══════════════════════════════════════════════════════
+const GMAIL_SCOPE='https://www.googleapis.com/auth/gmail.readonly';
+let gmailToken=localStorage.getItem('ot_gmail_token')||null;
+let gmailUser=localStorage.getItem('ot_gmail_user')||null;
+let gmailClientId=localStorage.getItem('ot_gmail_clientid')||'669222570175-1597qa405vod85p8fjtck33043p66pvq.apps.googleusercontent.com';
+let gmailMails=[];       // fetched mail list
+let gmailFilter='ALL';
+let processedIds=new Set(JSON.parse(localStorage.getItem('ot_gmail_processed')||'[]'));
+
+// Restore client ID input on load
+// Gmail init — runs after full page load
+function initGmail(){
+  if(gmailClientId){
+    const el=document.getElementById('gmail-client-id');
+    if(el) el.value=gmailClientId;
+  }
+  // Check if we just came back from Google OAuth
+  const justAuthed=sessionStorage.getItem('gmail_just_authed');
+  const tk=localStorage.getItem('ot_gmail_token');
+  if(justAuthed&&tk){
+    sessionStorage.removeItem('gmail_just_authed');
+    gmailToken=tk;
+    // Switch to gmail screen
+    switchScreen('screen-gmail');
+    setNav('nav-gmail');
+    // Get user info
+    fetch('https://www.googleapis.com/oauth2/v2/userinfo',{headers:{Authorization:'Bearer '+tk}})
+      .then(r=>r.json()).then(u=>{
+        gmailUser=u.email||u.name||'Gmail';
+        localStorage.setItem('ot_gmail_user',gmailUser);
+        gmailUpdateUI(true);
+        showToast('✅ Gmail conectado: '+gmailUser);
+        gmailFetch();
+      }).catch(()=>{
+        gmailUpdateUI(true);
+        showToast('✅ Gmail conectado');
+        gmailFetch();
+      });
+  } else if(tk){
+    gmailToken=tk;
+    gmailUpdateUI(true);
+  }
+}
+
+function saveGmailClientId(){
+  gmailClientId=document.getElementById('gmail-client-id').value.trim();
+  localStorage.setItem('ot_gmail_clientid',gmailClientId);
+}
+
+function gmailLogin(){
+  if(!gmailClientId){
+    document.getElementById('gmail-client-id').style.borderColor='var(--red)';
+    showToast('⚠️ Primero ingresa tu Client ID',true);
+    return;
+  }
+  // Redirect URI must match exactly what's registered in Google Cloud Console
+  // Force exact Netlify URL — no trailing slash, no /index.html
+  const rd='https://admirable-alfajores-22107d.netlify.app';
+  console.log('OAuth redirect_uri:', rd);
+  const params=new URLSearchParams({
+    client_id:gmailClientId,
+    redirect_uri:rd,
+    response_type:'token',
+    scope:GMAIL_SCOPE+' https://www.googleapis.com/auth/userinfo.email',
+    include_granted_scopes:'true',
+    prompt:'consent'
+  });
+  window.location.href='https://accounts.google.com/o/oauth2/v2/auth?'+params.toString();
+}
+
+function gmailLogout(){
+  gmailToken=null;gmailUser=null;
+  localStorage.removeItem('ot_gmail_token');
+  localStorage.removeItem('ot_gmail_user');
+  gmailMails=[];
+  gmailUpdateUI(false);
+  showToast('Sesión Gmail cerrada');
+}
+
+function gmailUpdateUI(connected){
+  document.getElementById('gmail-setup-view').style.display=connected?'none':'block';
+  document.getElementById('gmail-connected-view').style.display=connected?'block':'none';
+  document.getElementById('gmail-refresh-btn').style.display=connected?'flex':'none';
+  if(connected){
+    document.getElementById('gmail-user-label').textContent=gmailUser||'Gmail conectado';
+    document.getElementById('gmail-topbar-sub').textContent=gmailUser||'bandeja conectada';
+  }
+}
+
+function setGmailFilter(el,val){
+  gmailFilter=val;
+  document.querySelectorAll('.gmail-filter-bar .filter-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  renderMailList();
+}
+
+async function gmailFetch(){
+  if(!gmailToken){showToast('Primero conecta tu Gmail',true);return;}
+  document.getElementById('gmail-dot').className='gmail-status-dot spin';
+  document.getElementById('gmail-last-sync').textContent='Buscando facturas…';
+  try{
+    // Search ALL emails with PDF or XML attachments (broad search)
+    const query=encodeURIComponent('has:attachment (filename:pdf OR filename:xml)');
+    const listRes=await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${query}&maxResults=50`,
+      {headers:{Authorization:'Bearer '+gmailToken}}
+    );
+    if(listRes.status===401){gmailExpired();return;}
+    if(!listRes.ok)throw new Error('Error '+listRes.status);
+    const listData=await listRes.json();
+    const messages=listData.messages||[];
+    if(!messages.length){
+      document.getElementById('gmail-last-sync').textContent='Sin facturas nuevas encontradas';
+      document.getElementById('gmail-dot').className='gmail-status-dot ok';
+      renderMailList();
+      return;
+    }
+    // Fetch full message to get attachments (format=full includes payload.parts)
+    // Batch in groups of 10 to avoid rate limits
+    const allIds=messages.map(m=>m.id);
+    const details=[];
+    for(let i=0;i<allIds.length;i+=10){
+      const batch=allIds.slice(i,i+10);
+      const batchResults=await Promise.all(batch.map(id=>
+        fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
+          {headers:{Authorization:'Bearer '+gmailToken}}).then(r=>r.json())
+      ));
+      details.push(...batchResults);
+    }
+    gmailMails=details.map(msg=>{
+      const headers=msg.payload?.headers||[];
+      const get=name=>headers.find(h=>h.name===name)?.value||'';
+      // Find PDF attachments
+      // In format=full, parts can be nested (multipart/mixed > multipart/related etc)
+      const parts=msg.payload?.parts||[];
+      // Also check top-level payload as a part (for simple messages)
+      const allMsgParts=[msg.payload,...getAllParts(parts)].filter(Boolean);
+      const attachments=allMsgParts.filter(p=>
+        p.filename&&(
+          p.filename.toLowerCase().endsWith('.pdf')||
+          p.filename.toLowerCase().endsWith('.xml')||
+          p.mimeType==='application/pdf'||
+          p.mimeType==='text/xml'||
+          p.mimeType==='application/xml'
+        )
+      ).map(p=>({name:p.filename,attachmentId:p.body?.attachmentId,size:p.body?.size||0,mimeType:p.mimeType||'application/pdf'}));
+      return {
+        id:msg.id,
+        from:get('From'),
+        subject:get('Subject')||'(sin asunto)',
+        date:get('Date'),
+        attachments,
+        processed:processedIds.has(msg.id)
+      };
+    }); // show all, attachments may be 0 for link-only emails
+
+    document.getElementById('gmail-dot').className='gmail-status-dot ok';
+    document.getElementById('gmail-last-sync').textContent=
+      'Actualizado · '+gmailMails.length+' correo'+(gmailMails.length!==1?'s':'');
+    renderMailList();
+    showToast('📬 '+gmailMails.length+' facturas encontradas');
+  }catch(e){
+    document.getElementById('gmail-dot').className='gmail-status-dot ok';
+    document.getElementById('gmail-last-sync').textContent='Error al buscar';
+    showToast('❌ '+e.message,true);
+  }
+}
+
+function getAllParts(parts){
+  let all=[];
+  parts.forEach(p=>{all.push(p);if(p.parts)all=all.concat(getAllParts(p.parts));});
+  return all;
+}
+
+function renderMailList(){
+  const c=document.getElementById('mailList');c.innerHTML='';
+  let mails=[...gmailMails];
+  if(gmailFilter==='PENDING')mails=mails.filter(m=>!m.processed);
+  if(gmailFilter==='DONE')mails=mails.filter(m=>m.processed);
+  if(!mails.length){
+    c.innerHTML=`<div class="gmail-empty"><div class="gmail-empty-icon">${gmailFilter==='DONE'?'✅':'📭'}</div><div class="gmail-empty-text">${gmailFilter==='DONE'?'Ninguna procesada aún':'Sin correos pendientes'}</div></div>`;
+    return;
+  }
+  mails.forEach((m,i)=>{
+    const el=document.createElement('div');
+    el.className='mail-item'+(m.processed?' processed':'');
+    el.style.animationDelay=Math.min(i*.04,.25)+'s';
+    const fromName=m.from.replace(/<.*>/,'').trim()||m.from;
+    const chips=m.attachments.length
+      ? m.attachments.map(a=>{
+          const isXml=a.name.toLowerCase().endsWith('.xml');
+          const icon=isXml?'📋':'📄';
+          const nm=a.name.length>22?a.name.slice(0,20)+'…':a.name;
+          return `<span class="mail-attach-chip">${icon} ${nm}</span>`;
+        }).join('')
+      : '<span class="mail-attach-chip" style="background:rgba(0,212,255,.1);color:var(--accent);border-color:rgba(0,212,255,.2)">🔗 Ver adjuntos</span>';
+    const procBadge=m.processed?'<span class="mail-processed-badge">✅ Procesado</span>':'';
+    el.innerHTML=`
+      <div class="mail-icon">📧</div>
+      <div class="mail-info">
+        <div class="mail-from">${fromName}</div>
+        <div class="mail-subject">${m.subject}</div>
+        <div class="mail-date">${formatMailDate(m.date)}</div>
+        <div class="mail-attach">${chips}</div>
+      </div>
+      ${procBadge}`;
+    el.onclick=()=>openMailDetail(m);
+    c.appendChild(el);
+  });
+}
+
+function formatMailDate(dateStr){
+  if(!dateStr)return'';
+  try{return new Date(dateStr).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+  catch{return dateStr;}
+}
+
+function openMailDetail(mail){
+  const attRows=mail.attachments.length ? mail.attachments.map(att=>{
+    const isXml=att.name.toLowerCase().endsWith('.xml');
+    const icon=isXml?'📋':'📄';
+    const mtype=att.mimeType||'application/pdf';
+    const attIdx=mail.attachments.indexOf(att);
+    return `<div class="mail-att-row" onclick="scanMailAttachmentByIndex('${mail.id}',${attIdx})">
+      <span class="mail-att-icon">${icon}</span>
+      <span class="mail-att-name">${att.name}</span>
+      <span class="mail-att-scan">✨ Escanear</span>
+    </div>`;
+  }).join('') : `<div style="padding:14px;text-align:center;font-size:12px;color:var(--muted);line-height:1.7">
+    Este correo no tiene PDF/XML adjuntos detectables.<br>
+    Descarga la factura y reenvíatela con el PDF adjunto.
+  </div>`;
+  const fromName=mail.from.replace(/<.*>/,'').trim()||mail.from;
+  document.getElementById('mailDetailContent').innerHTML=`
+    <div class="modal-handle"></div>
+    <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:16px">
+      <div style="width:44px;height:44px;border-radius:12px;background:rgba(234,67,53,.12);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📧</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;margin-bottom:2px">${fromName}</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">${mail.subject}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">${formatMailDate(mail.date)}</div>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">📎 Archivos adjuntos — toca para escanear con IA</div>
+      <div class="mail-att-list">${attRows}</div>
+    </div>
+    ${mail.processed?'<div style="text-align:center;padding:10px;font-size:12px;color:var(--green);font-weight:700">✅ Este correo ya fue procesado</div>':''}
+    <button onclick="document.getElementById('mailDetailModal').classList.remove('open')" style="width:100%;padding:12px;margin-top:8px;background:transparent;border:1.5px solid var(--border);border-radius:12px;color:var(--muted);font-family:var(--font);font-size:13px;cursor:pointer">Cerrar</button>`;
+  document.getElementById('mailDetailModal').classList.add('open');
+}
+
+function scanMailAttachmentByIndex(messageId,attIdx){
+  const mail=gmailMails.find(m=>m.id===messageId);
+  if(!mail||!mail.attachments[attIdx])return;
+  const att=mail.attachments[attIdx];
+  scanMailAttachment(messageId,att.attachmentId,att.name,att.mimeType||'application/pdf');
+}
+
+async function scanMailAttachment(messageId,attachmentId,filename,mimeType){
+  mimeType=mimeType||'application/pdf';
+  const isPDF=!filename.toLowerCase().endsWith('.xml');
+  document.getElementById('mailDetailModal').classList.remove('open');
+  // Reuse scan modal UI
+  resetScan();
+  document.getElementById('scanModal').classList.add('open');
+  document.getElementById('scan-pick').style.display='none';
+  document.getElementById('scan-loading').style.display='block';
+  document.getElementById('ai-msg').textContent='Descargando adjunto de Gmail…';
+  const msgs=['Descargando adjunto de Gmail…','Leyendo el CFDI…','Extrayendo datos fiscales…','Identificando proveedor…'];
+  let mi=0;const mEl=document.getElementById('ai-msg');
+  const iv=setInterval(()=>{mi=(mi+1)%msgs.length;mEl.textContent=msgs[mi];},1800);
+  try{
+    // Download attachment using Gmail API
+    const attUrl=`https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/attachments/${encodeURIComponent(attachmentId)}`;
+    const res=await fetch(attUrl,{
+      method:'GET',
+      headers:{
+        'Authorization':'Bearer '+gmailToken,
+        'Accept':'application/json'
+      }
+    });
+    if(res.status===401){gmailExpired();clearInterval(iv);return;}
+    if(!res.ok){
+      const errText=await res.text().catch(()=>'');
+      throw new Error('Error '+res.status+' descargando adjunto: '+errText.slice(0,100));
+    }
+    const data=await res.json();
+    if(!data.data)throw new Error('El adjunto no tiene datos. Intenta con otro archivo.');
+    // Gmail returns base64url encoding — convert to standard base64
+    const base64=data.data.replace(/-/g,'+').replace(/_/g,'/').replace(/\s/g,'');
+    pendingFile={name:filename,type:mimeType,base64,size:data.size||0,gmailMessageId:messageId};
+    clearInterval(iv);
+    const result=await callClaudeOCR(base64,isPDF,mimeType);
+    if(!result)throw new Error('No se pudo extraer información');
+    pendingAi=result;
+    showAiResult(result);
+    // Mark as processed when confirmed
+    markMailProcessed(messageId);
+  }catch(err){
+    clearInterval(iv);
+    document.getElementById('scan-loading').style.display='none';
+    document.getElementById('scan-error').style.display='block';
+    document.getElementById('scan-err-msg').textContent=err.message||'Error al descargar adjunto';
+  }
+}
+
+function markMailProcessed(messageId){
+  processedIds.add(messageId);
+  localStorage.setItem('ot_gmail_processed',JSON.stringify([...processedIds]));
+  const m=gmailMails.find(x=>x.id===messageId);
+  if(m)m.processed=true;
+  renderMailList();
+}
+
+function gmailExpired(){
+  gmailToken=null;localStorage.removeItem('ot_gmail_token');
+  gmailUpdateUI(false);
+  showToast('⚠️ Sesión Gmail expirada, reconecta',true);
+}
+
+function showGmailInstructions(){
+  document.getElementById('gmailInstrModal').classList.add('open');
+}
+
+// Patch switchScreen to handle gmail
+const _origSwitch=switchScreen;
+// Override already defined, just add gmail to the if-chain by patching:
+
+</script>
+</body>
+</html>
