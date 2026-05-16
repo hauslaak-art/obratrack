@@ -1048,8 +1048,9 @@ async function saveProject(){
 // ── SCAN / IA ────────────────────────────────────────────────
 function openScan(){
   resetScan();
+  const proxyUrl=localStorage.getItem('cfg_proxy_url');
   const banner=document.getElementById('scan-ios-banner');
-  if(banner)banner.style.display=isIOSSafari?'block':'none';
+  if(banner)banner.style.display=(isIOSSafari&&!proxyUrl)?'block':'none';
   document.getElementById('scanModal').classList.add('open');
 }
 function triggerCapture(mode){if(mode==='camera')document.getElementById('cam-input').click();else document.getElementById('file-input').click();}
@@ -1063,8 +1064,9 @@ const isIOSSafari = isIOS || isSafariBrowser;
 
 async function handleFile(e){
   const file=e.target.files[0];e.target.value='';if(!file)return;
-  // iOS Safari bloquea fetch() a api.anthropic.com desde WebView/Safari
-  if(isIOSSafari){
+  const proxyUrl=localStorage.getItem('cfg_proxy_url');
+  // iOS Safari sin proxy configurado → mostrar guía
+  if(isIOSSafari && !proxyUrl){
     document.getElementById('scan-pick').style.display='none';
     document.getElementById('scan-loading').style.display='none';
     document.getElementById('scan-result').style.display='none';
@@ -1087,8 +1089,8 @@ async function handleFile(e){
   }catch(err){
     clearInterval(iv);
     document.getElementById('scan-loading').style.display='none';
-    // Si es error de red en iOS, mostrar guía en lugar del error
-    if(isIOSSafari||(err.message&&err.message.toLowerCase().includes('ios'))){
+    // Si es error de red en iOS sin proxy, mostrar guía
+    if(isIOSSafari&&!proxyUrl||(err.message&&err.message.toLowerCase().includes('ios'))){
       document.getElementById('scan-ios-guide').style.display='block';return;
     }
     document.getElementById('scan-error').style.display='block';
