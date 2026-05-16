@@ -297,22 +297,37 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <div class="screen" id="screen-stats">
   <div class="topbar"><div><div class="topbar-brand">Análisis</div><div class="topbar-sub" id="stats-subtitle">resumen ejecutivo</div></div></div>
   <div class="ins-tab-bar" id="statsTabBar">
-    <div class="ins-tab active" onclick="setStatsTab(this,'resumen')">📊 Resumen</div>
-    <div class="ins-tab" onclick="setStatsTab(this,'meses')">📅 Por Mes</div>
-    <div class="ins-tab" onclick="setStatsTab(this,'fechas')">🗓️ Por Fecha</div>
+    <div class="ins-tab active" onclick="setStatsTab(this,'resumen')">📊 Total</div>
+    <div class="ins-tab" onclick="setStatsTab(this,'anio')">📆 Año</div>
+    <div class="ins-tab" onclick="setStatsTab(this,'meses')">📅 Mes</div>
+    <div class="ins-tab" onclick="setStatsTab(this,'semanas')">📋 Semana</div>
+    <div class="ins-tab" onclick="setStatsTab(this,'fechas')">🗓️ Día</div>
   </div>
   <div class="scroll">
+    <!-- RESUMEN -->
     <div id="stats-panel-resumen">
       <div class="sec-header" style="padding-top:16px"><span class="sec-title">Resumen General</span></div>
       <div class="stats-grid" id="statsGrid"></div>
-      <div class="sec-header"><span class="sec-title">Top Proveedores</span></div>
-      <div class="prov-list" id="provList"></div>
       <div class="sec-header"><span class="sec-title">Por Concepto</span></div>
       <div class="concept-list" id="statsConceptList"></div>
+      <div class="sec-header"><span class="sec-title">Top Proveedores</span></div>
+      <div class="prov-list" id="provList"></div>
     </div>
-    <div id="stats-panel-meses" style="display:none"><div id="monthList" style="padding:0 16px;display:flex;flex-direction:column;gap:8px;padding-top:14px"></div></div>
+    <!-- AÑO -->
+    <div id="stats-panel-anio" style="display:none">
+      <div id="anioList" style="padding:14px 16px 0;display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+    <!-- MES -->
+    <div id="stats-panel-meses" style="display:none">
+      <div id="monthList" style="padding:0 16px;display:flex;flex-direction:column;gap:8px;padding-top:14px"></div>
+    </div>
+    <!-- SEMANA -->
+    <div id="stats-panel-semanas" style="display:none">
+      <div id="semanaList" style="padding:0 16px;display:flex;flex-direction:column;gap:8px;padding-top:14px"></div>
+    </div>
+    <!-- DÍA -->
     <div id="stats-panel-fechas" style="display:none">
-      <div class="ins-search" style="padding-top:14px"><span class="si">🔍</span><input id="fechaSearch" placeholder="Buscar fecha (ej: 08/12, diciembre…)" oninput="renderFechas()"></div>
+      <div class="ins-search" style="padding-top:14px"><span class="si">🔍</span><input id="fechaSearch" placeholder="Buscar (ej: 08/12, diciembre, Omar…)" oninput="renderFechas()"></div>
       <div id="fechaList" style="padding:0 16px;display:flex;flex-direction:column;gap:6px"></div>
     </div>
     <div style="height:20px"></div>
@@ -324,10 +339,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   <div class="topbar"><div><div class="topbar-brand">Exportar</div><div class="topbar-sub">respaldo y reportes</div></div></div>
   <div class="scroll">
     <div class="export-card">
-      <div class="export-title">💾 Storage Local</div>
-      <div class="export-sub">Los datos se guardan en este dispositivo automáticamente.</div>
-      <button class="export-btn primary" onclick="forceSave()">💾 Guardar ahora</button>
-      <button class="export-btn" onclick="forceLoad()" style="border-color:var(--accent);color:var(--accent)">🔄 Recargar datos</button>
+      <div class="export-title">☁️ Sincronización en la Nube</div>
+      <div class="export-sub">Todos los dispositivos comparten los mismos datos automáticamente vía Cloudflare KV.</div>
+      <button class="export-btn primary" onclick="forceSave()">☁️ Guardar en la nube ahora</button>
+      <button class="export-btn" onclick="forceLoad()" style="border-color:var(--accent);color:var(--accent)">🔄 Sincronizar desde la nube</button>
     </div>
     <div class="export-card">
       <div class="export-title">📦 Respaldo JSON</div><div class="export-sub">Descarga todos tus datos.</div>
@@ -652,12 +667,15 @@ let editingTxId = null;
 let pendingAi = null;
 let pendingFile = null;
 
+// ── DEBOUNCE para no saturar KV con cada tecla ───────────────
+let _syncTimer = null;
+function debouncedCloudSave(){ clearTimeout(_syncTimer); _syncTimer = setTimeout(cloudSave, 2000); }
+
 function storageSaveSync(data) {
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
-    setSyncStatus('ok', '💾 ' + new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}));
-    try { if(window.storage?.set) window.storage.set(LOCAL_KEY,JSON.stringify(data)).catch(()=>{}); } catch(e){}
-  } catch(e) { setSyncStatus('ok','Sin storage'); }
+  } catch(e) {}
+  debouncedCloudSave();
 }
 function storageLoadSync() {
   try {
@@ -667,18 +685,71 @@ function storageLoadSync() {
   return null;
 }
 async function saveState() { storageSaveSync(state); }
-function forceSave() { storageSaveSync(state); showToast('✅ Guardado'); }
-function forceLoad() {
+function forceSave() { storageSaveSync(state); cloudSave(true); }
+
+// ── CLOUD SYNC (Cloudflare KV) ────────────────────────────────
+async function cloudSave(showMsg) {
+  const proxyUrl = localStorage.getItem('cfg_proxy_url');
+  if(!proxyUrl) return;
+  setSyncStatus('syncing', '☁️ Guardando…');
   try {
-    const loaded = storageLoadSync();
-    if(loaded) {
-      state = loaded;
-      if(!state.projects) state.projects = defaultState().projects;
-      if(!state.transactions) state.transactions = [];
-      activeProject = state.projects[0].id;
-      renderDash(); renderList(); showToast('✅ Datos recargados'); setSyncStatus('ok','Sincronizado');
-    } else { showToast('Sin datos guardados',true); }
-  } catch(e) { showToast('Error al recargar',true); }
+    const r = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-hl-action': 'sync-save' },
+      body: JSON.stringify(state)
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const t = new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+    setSyncStatus('ok', '☁️ Sincronizado ' + t);
+    if(showMsg) showToast('✅ Guardado en la nube');
+  } catch(e) {
+    setSyncStatus('ok', '⚠️ Solo local');
+  }
+}
+
+async function cloudLoad() {
+  const proxyUrl = localStorage.getItem('cfg_proxy_url');
+  if(!proxyUrl) return null;
+  try {
+    setSyncStatus('syncing', '☁️ Cargando…');
+    const r = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-hl-action': 'sync-load' },
+      body: '{}'
+    });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    if(data.empty) return null;
+    return data;
+  } catch(e) {
+    return null;
+  }
+}
+
+function forceLoad() {
+  showToast('☁️ Sincronizando…', false, true);
+  cloudLoad().then(cloud => {
+    if(cloud && cloud.transactions) {
+      // Merge cloud + local
+      const localIds = new Set(state.transactions.map(t=>t.id));
+      const cloudIds = new Set(cloud.transactions.map(t=>t.id));
+      // All cloud transactions + local ones not in cloud
+      const merged = [...cloud.transactions];
+      state.transactions.filter(t=>!cloudIds.has(t.id)).forEach(t=>merged.push(t));
+      // Projects: union
+      const allPids = new Set(cloud.projects.map(p=>p.id));
+      const mergedP = [...cloud.projects];
+      state.projects.filter(p=>!allPids.has(p.id)).forEach(p=>mergedP.push(p));
+      state = { projects: mergedP, transactions: merged };
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
+      renderDash(); renderList();
+      showToast('✅ ' + merged.length + ' registros sincronizados');
+      setSyncStatus('ok', '☁️ Sincronizado');
+    } else {
+      showToast('Sin datos en la nube — usando local');
+      setSyncStatus('ok', '💾 Local');
+    }
+  });
 }
 function setSyncStatus(status, label) {
   try {
@@ -719,7 +790,7 @@ function switchScreen(id){
   document.getElementById(id).classList.add('active');
   if(id==='screen-dash')renderDash();
   if(id==='screen-list')renderList();
-  if(id==='screen-stats')renderStats();
+  if(id==='screen-stats'){renderStats();if(statsTab==='anio')renderAnio();if(statsTab==='semanas')renderSemanas();}
   if(id==='screen-insumos')renderInsumos();
   if(id==='screen-gmail')initGmail();
   if(id==='screen-export')updateExportLabels();
@@ -881,11 +952,154 @@ function renderStats(){
 function setStatsTab(el,tab){
   statsTab=tab;
   document.querySelectorAll('#statsTabBar .ins-tab').forEach(e=>e.classList.remove('active'));el.classList.add('active');
-  document.getElementById('stats-panel-resumen').style.display=tab==='resumen'?'block':'none';
-  document.getElementById('stats-panel-meses').style.display=tab==='meses'?'block':'none';
-  document.getElementById('stats-panel-fechas').style.display=tab==='fechas'?'block':'none';
+  ['resumen','anio','meses','semanas','fechas'].forEach(p=>{
+    const el=document.getElementById('stats-panel-'+p);if(el)el.style.display='none';
+  });
+  const panel=document.getElementById('stats-panel-'+tab);
+  if(panel)panel.style.display='block';
+  if(tab==='resumen')renderStats();
+  if(tab==='anio')renderAnio();
   if(tab==='meses')renderMeses();
+  if(tab==='semanas')renderSemanas();
   if(tab==='fechas')renderFechas();
+}
+
+// ── POR AÑO ──────────────────────────────────────────────────
+function renderAnio(){
+  const txs=state.transactions.filter(t=>t.obraId===activeProject&&t.fecha);
+  const map={};
+  txs.forEach(t=>{
+    const y=t.fecha.substring(0,4);
+    if(!map[y])map[y]={anio:y,total:0,count:0,meses:{},conceptos:{}};
+    map[y].total+=t.monto||0;map[y].count++;
+    const m=t.fecha.substring(0,7);
+    map[y].meses[m]=(map[y].meses[m]||0)+(t.monto||0);
+    map[y].conceptos[t.concepto]=(map[y].conceptos[t.concepto]||0)+(t.monto||0);
+  });
+  const sorted=Object.values(map).sort((a,b)=>b.anio.localeCompare(a.anio));
+  const container=document.getElementById('anioList');container.innerHTML='';
+  if(!sorted.length){container.innerHTML='<div class="empty"><div class="empty-icon">📆</div><div class="empty-text">Sin datos anuales</div></div>';return;}
+  const maxVal=sorted.reduce((m,e)=>Math.max(m,e.total),0)||1;
+  sorted.forEach((y,yi)=>{
+    const pct=(y.total/maxVal*100).toFixed(0);
+    const color=COLORS[yi%COLORS.length];
+    // Mini bar chart por mes
+    const mEntries=Object.entries(y.meses).sort((a,b)=>a[0].localeCompare(b[0]));
+    const maxM=mEntries.reduce((m,[,v])=>Math.max(m,v),0)||1;
+    const barH=36;
+    const barChart=mEntries.map(([mk,mv])=>{
+      const mo=parseInt(mk.split('-')[1])-1;
+      const h=Math.max((mv/maxM)*barH,2);
+      const mName=MONTH_NAMES[mo].substring(0,3);
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">
+        <div style="width:100%;height:${barH}px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:${h}px;background:${color};border-radius:3px 3px 0 0;opacity:.8"></div>
+        </div>
+        <div style="font-size:7px;color:var(--muted);text-align:center">${mName}</div>
+      </div>`;
+    }).join('');
+    // Top conceptos
+    const topC=Object.entries(y.conceptos).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden';
+    card.innerHTML=`
+      <div style="padding:16px 16px 12px;display:flex;align-items:center;gap:12px">
+        <div style="width:48px;height:48px;border-radius:14px;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">📆</div>
+        <div style="flex:1">
+          <div style="font-size:20px;font-weight:800;letter-spacing:-1px">${y.anio}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${y.count} registro${y.count!==1?'s':''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent2)">${fmtFull(y.total)}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">total año</div>
+        </div>
+      </div>
+      <div style="padding:0 16px 12px">
+        <div style="height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-bottom:12px">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:2px;transition:width .5s ease"></div>
+        </div>
+        ${mEntries.length?`<div style="display:flex;gap:3px;align-items:flex-end;height:${barH+16}px">${barChart}</div>`:''}
+      </div>
+      <div style="border-top:1px solid var(--border);padding:10px 16px">
+        ${topC.map(([c,v])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px">
+          <span style="color:var(--muted)">${ICONS[c]||'📦'} ${c}</span>
+          <span style="font-family:var(--mono);color:var(--accent2)">${fmtFull(v)}</span>
+        </div>`).join('')}
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+// ── POR SEMANA ────────────────────────────────────────────────
+function renderSemanas(){
+  const txs=state.transactions.filter(t=>t.obraId===activeProject&&t.fecha);
+  const map={};
+  txs.forEach(t=>{
+    const dt=new Date(t.fecha+'T12:00:00');
+    const dow=dt.getDay();
+    const mon=new Date(dt);mon.setDate(dt.getDate()-(dow===0?6:dow-1));
+    const key=mon.toISOString().split('T')[0];
+    const label='Sem '+mon.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+    if(!map[key])map[key]={key,label,total:0,ef:0,tr:0,tc:0,count:0,conceptos:{},dias:{}};
+    map[key].total+=t.monto||0;map[key].count++;
+    if(t.metodo==='EFECTIVO')map[key].ef+=t.monto||0;
+    else if(t.metodo==='TRANSFERENCIA')map[key].tr+=t.monto||0;
+    else map[key].tc+=t.monto||0;
+    map[key].conceptos[t.concepto]=(map[key].conceptos[t.concepto]||0)+(t.monto||0);
+    map[key].dias[t.fecha]=(map[key].dias[t.fecha]||0)+(t.monto||0);
+  });
+  const sorted=Object.values(map).sort((a,b)=>b.key.localeCompare(a.key));
+  const container=document.getElementById('semanaList');container.innerHTML='';
+  if(!sorted.length){container.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Sin datos semanales</div></div>';return;}
+  const maxVal=sorted.reduce((m,e)=>Math.max(m,e.total),0)||1;
+  sorted.forEach((sem,si)=>{
+    const pct=(sem.total/maxVal*100).toFixed(0);
+    const color=COLORS[si%COLORS.length];
+    const topC=Object.entries(sem.conceptos).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    // Mini 7-day chart
+    const days=[];for(let i=0;i<7;i++){const d=new Date(sem.key+'T12:00:00');d.setDate(d.getDate()+i);days.push(d.toISOString().split('T')[0]);}
+    const maxD=Math.max(...days.map(d=>sem.dias[d]||0),1);
+    const DNAMES=['L','M','X','J','V','S','D'];
+    const miniBar=days.map((d,i)=>{
+      const v=sem.dias[d]||0;const h=Math.max((v/maxD)*28,v>0?3:0);
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="width:100%;height:28px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:${h}px;background:${color};border-radius:2px 2px 0 0;opacity:${v>0?.9:.2}"></div>
+        </div>
+        <div style="font-size:7px;color:var(--muted)">${DNAMES[i]}</div>
+      </div>`;
+    }).join('');
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden';
+    card.innerHTML=`
+      <div style="padding:14px 16px 10px;display:flex;align-items:flex-start;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:800">${sem.label}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${sem.count} movimiento${sem.count!==1?'s':''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--mono);font-size:16px;font-weight:700;color:var(--accent2)">${fmtFull(sem.total)}</div>
+        </div>
+      </div>
+      <div style="padding:0 16px 10px">
+        <div style="height:3px;background:var(--surface3);border-radius:2px;overflow:hidden;margin-bottom:8px">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:2px"></div>
+        </div>
+        <div style="display:flex;gap:3px">${miniBar}</div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding:8px 16px;display:flex;gap:8px;flex-wrap:wrap">
+        ${sem.ef?`<span style="font-size:10px;background:rgba(255,107,43,.12);color:var(--accent2);padding:2px 8px;border-radius:6px;font-weight:700">💵 ${fmtFull(sem.ef)}</span>`:''}
+        ${sem.tr?`<span style="font-size:10px;background:rgba(0,212,255,.1);color:var(--accent);padding:2px 8px;border-radius:6px;font-weight:700">🏦 ${fmtFull(sem.tr)}</span>`:''}
+        ${sem.tc?`<span style="font-size:10px;background:rgba(0,230,118,.1);color:var(--green);padding:2px 8px;border-radius:6px;font-weight:700">💳 ${fmtFull(sem.tc)}</span>`:''}
+      </div>
+      <div style="padding:4px 16px 10px;display:flex;flex-direction:column;gap:2px">
+        ${topC.map(([c,v])=>`<div style="display:flex;justify-content:space-between;font-size:11px">
+          <span style="color:var(--muted)">${ICONS[c]||'📦'} ${c}</span>
+          <span style="font-family:var(--mono);color:var(--text)">${fmtFull(v)}</span>
+        </div>`).join('')}
+      </div>`;
+    container.appendChild(card);
+  });
 }
 
 function renderMeses(){
@@ -1529,6 +1743,26 @@ const FULL_BACKUP = {"projects":[{"id":"canchas-padel-final","name":"Canchas Pá
 function init(){
   try{
     setSyncStatus('syncing','Cargando…');
+    // Intenta cargar desde nube primero, luego local como fallback
+    const proxyUrl = localStorage.getItem('cfg_proxy_url');
+    if(proxyUrl){
+      cloudLoad().then(cloud => {
+        if(cloud && cloud.transactions && cloud.transactions.length > 0){
+          // Merge cloud con datos embebidos
+          const cloudIds = new Set(cloud.transactions.map(t=>t.id));
+          const extra = (state ? state.transactions || [] : []).filter(t=>!cloudIds.has(t.id));
+          state = { projects: cloud.projects, transactions: [...cloud.transactions, ...extra] };
+          // Also merge CPF seeds
+          const allIds = new Set(state.transactions.map(t=>t.id));
+          CPF_SEED_TRANSACTIONS.forEach(t=>{ if(!allIds.has(t.id)) state.transactions.push(t); });
+          localStorage.setItem(LOCAL_KEY, JSON.stringify(state));
+          const cpf = state.projects.find(p=>p.id==='canchas-padel-final');
+          activeProject = cpf ? cpf.id : state.projects[0].id;
+          setSyncStatus('ok','☁️ ' + state.transactions.length + ' registros');
+          renderDash();
+        }
+      }).catch(()=>{});
+    }
     const loaded=storageLoadSync();
     if(loaded){
       state=loaded;
