@@ -233,6 +233,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .prov-kpi-val{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent)}
 .prov-kpi-lbl{font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:1px;text-transform:uppercase}
 .sync-bar{display:flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(0,212,255,.06);border-bottom:1px solid rgba(0,212,255,.1);font-size:11px;color:var(--accent);flex-shrink:0}
+.tipo-toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.tipo-btn{padding:13px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-size:14px;font-weight:800;font-family:var(--font);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.tipo-btn.active-gasto{background:rgba(255,107,43,.15);border-color:var(--accent2);color:var(--accent2)}
+.tipo-btn.active-ingreso{background:rgba(0,230,118,.15);border-color:var(--green);color:var(--green)}
+.obra-info-card{margin:0 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
+.obra-info-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(42,61,82,.4)}
+.obra-info-row:last-child{border-bottom:none}
+.obra-info-key{font-size:11px;color:var(--muted)}
+.obra-info-val{font-size:12px;font-weight:700;text-align:right}
+.ingreso-badge{background:rgba(0,230,118,.15);color:var(--green);padding:2px 8px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:1px}
 .settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(42,61,82,.5)}
 .settings-row:last-child{border-bottom:none}
 .settings-key{font-size:12px;color:var(--muted);flex-shrink:0;min-width:120px}
@@ -261,10 +271,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   <div class="project-bar" id="projectBar"></div>
   <div class="scroll">
     <div class="kpi-strip">
-      <div class="kpi-card c1"><div class="kpi-label">Total Obra</div><div class="kpi-value accent" id="kpi-total">$0</div><div class="kpi-sub" id="kpi-txcount">0 registros</div></div>
-      <div class="kpi-card c2"><div class="kpi-label">Esta Semana</div><div class="kpi-value orange" id="kpi-week">$0</div><div class="kpi-sub" id="kpi-weekcount">0 mov.</div></div>
-      <div class="kpi-card c3"><div class="kpi-label">Efectivo</div><div class="kpi-value green" id="kpi-ef">$0</div><div class="kpi-sub">método pago</div></div>
-      <div class="kpi-card c4"><div class="kpi-label">Transferencia</div><div class="kpi-value amber" id="kpi-tr">$0</div><div class="kpi-sub">método pago</div></div>
+      <div class="kpi-card c1"><div class="kpi-label">Total Gastos</div><div class="kpi-value orange" id="kpi-total">$0</div><div class="kpi-sub" id="kpi-txcount">0 registros</div></div>
+      <div class="kpi-card c3"><div class="kpi-label">Total Ingresos</div><div class="kpi-value green" id="kpi-ingresos">$0</div><div class="kpi-sub" id="kpi-ing-count">0 pagos</div></div>
+      <div class="kpi-card c2"><div class="kpi-label">Saldo Neto</div><div class="kpi-value accent" id="kpi-saldo">$0</div><div class="kpi-sub">ingresos − gastos</div></div>
+      <div class="kpi-card c4"><div class="kpi-label">Esta Semana</div><div class="kpi-value amber" id="kpi-week">$0</div><div class="kpi-sub" id="kpi-weekcount">0 mov.</div></div>
     </div>
     <div class="sec-header"><span class="sec-title">Últimos 8 días</span></div>
     <div class="mini-chart"><div class="chart-bars" id="miniChart"></div></div>
@@ -521,18 +531,29 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <div class="modal-handle"></div>
     <div class="modal-title" id="newTxTitle">Nuevo <span>Gasto</span></div>
     <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Tipo de Movimiento</label>
+        <div class="tipo-toggle">
+          <button class="tipo-btn active-gasto" id="btn-tipo-gasto" onclick="setTipo('GASTO')">📤 Gasto</button>
+          <button class="tipo-btn" id="btn-tipo-ingreso" onclick="setTipo('INGRESO')">📥 Ingreso</button>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">Monto (MXN)</label><input class="form-input amount-input" id="f-monto" type="number" inputmode="decimal" placeholder="0.00" step="0.01"></div>
       <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="f-desc" type="text" placeholder="¿Qué se compró?" autocomplete="off"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Proveedor</label><input class="form-input" id="f-prov" type="text" placeholder="Nombre" list="prov-dl" autocomplete="off"><datalist id="prov-dl"></datalist></div>
         <div class="form-group"><label class="form-label">Concepto</label>
-          <select class="form-select" id="f-concepto">
+          <select class="form-select" id="f-concepto" onchange="checkConceptoOtro()">
             <option value="CIMENTACION">Cimentación</option><option value="MANO DE OBRA">Mano de Obra</option>
             <option value="MATERIALES">Materiales</option><option value="ELECTRICO">Eléctrico</option>
             <option value="HERRAMIENTA">Herramienta / Renta</option><option value="GASTOS OBRA">Gastos de Obra</option>
             <option value="GASTOS ADMON">Gastos Admón</option><option value="ARCOTECHO">Arcotecho</option>
-            <option value="PLOMERIA">Plomería</option><option value="ESTRUCTURA">Estructura</option><option value="OTRO">Otro</option>
+            <option value="PLOMERIA">Plomería</option><option value="ESTRUCTURA">Estructura</option>
+            <option value="ANTICIPO">Anticipo</option><option value="ESTIMACION">Estimación</option>
+            <option value="FINIQUITO">Finiquito</option><option value="OTRO">Otro</option>
+            <option value="__NUEVO__">＋ Nuevo concepto…</option>
           </select>
+          <input class="form-input" id="f-concepto-custom" type="text" placeholder="Escribe el concepto nuevo" style="display:none;margin-top:8px" autocomplete="off">
         </div>
       </div>
       <div class="form-row">
@@ -564,6 +585,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <!-- DETAIL MODAL -->
 <div class="modal-overlay" id="detailModal" onclick="closeOnBg(event,'detailModal')">
   <div class="modal" style="max-height:85dvh;overflow-y:auto" id="detailContent"></div>
+</div>
+
+<!-- OBRA INFO MODAL -->
+<div class="modal-overlay" id="obraInfoModal" onclick="closeOnBg(event,'obraInfoModal')">
+  <div class="modal" style="max-height:90dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Datos de la <span>Obra</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Cliente</label><input class="form-input" id="oi-cliente" type="text" placeholder="Nombre del cliente"></div>
+      <div class="form-group"><label class="form-label">No. Contrato</label><input class="form-input" id="oi-contrato" type="text" placeholder="Ej: CT-2025-001"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Fecha Inicio</label><input class="form-input" id="oi-inicio" type="date"></div>
+        <div class="form-group"><label class="form-label">Fecha Fin Est.</label><input class="form-input" id="oi-fin" type="date"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Monto Contrato (MXN)</label><input class="form-input" id="oi-monto-contrato" type="number" inputmode="decimal" placeholder="0.00" style="font-family:var(--mono)"></div>
+      <div class="form-group"><label class="form-label">Anticipo Pactado (%)</label><input class="form-input" id="oi-anticipo-pct" type="number" inputmode="decimal" placeholder="30" min="0" max="100"></div>
+      <div class="form-group"><label class="form-label">Dirección / Ubicación</label><input class="form-input" id="oi-direccion" type="text" placeholder="Calle, colonia, ciudad"></div>
+      <div class="form-group"><label class="form-label">Responsable de Obra</label><input class="form-input" id="oi-responsable" type="text" placeholder="Arq. Adolfo Maldonado" value="Arq. Adolfo Maldonado Gutiérrez"></div>
+      <div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="oi-notas" type="text" placeholder="Observaciones generales"></div>
+      <button class="submit-btn" onclick="saveObraInfo()">💾 Guardar Información</button>
+    </div>
+  </div>
 </div>
 
 <!-- SETTINGS MODAL -->
@@ -812,25 +855,46 @@ function renderProjectBar(){
     c.addEventListener('contextmenu',e=>{e.preventDefault();openDelProject(p.id);});
     bar.appendChild(c);
   });
+  // Info button for active project
+  const info=document.createElement('div');info.className='proj-chip';info.textContent='ℹ️';
+  info.style.cssText='padding:7px 10px;border-color:rgba(0,212,255,.3);color:var(--accent)';
+  info.onclick=openObraInfo;info.title='Datos de la obra';bar.appendChild(info);
   const a=document.createElement('div');a.className='proj-chip add-chip';a.textContent='＋ Obra';a.onclick=openAddProject;bar.appendChild(a);
 }
 
 function renderDash(){
   renderProjectBar();
   const proj=state.projects.find(p=>p.id===activeProject);
-  document.getElementById('dash-subtitle').textContent=proj?proj.name+(proj.location?' · '+proj.location:''):'Haus Laak';
+  const info=proj?.info;
+  let subtitle=proj?proj.name+(proj.location?' · '+proj.location:''):'Haus Laak';
+  if(info?.cliente)subtitle+=` · ${info.cliente}`;
+  document.getElementById('dash-subtitle').textContent=subtitle;
+  // Show obra info card if data exists
+  let obraInfoCard=document.getElementById('obra-info-dash');
+  if(info&&(info.montoContrato||info.cliente||info.contrato)){
+    if(!obraInfoCard){obraInfoCard=document.createElement('div');obraInfoCard.id='obra-info-dash';obraInfoCard.style.cssText='margin:12px 16px 0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:12px';document.querySelector('#screen-dash .scroll').insertAdjacentElement('afterbegin',obraInfoCard);}
+    const contrato=info.montoContrato?`<div style="flex:1;min-width:120px"><div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Contrato</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${fmtFull(info.montoContrato)}</div></div>`:'';
+    const anticipo=info.montoContrato&&info.anticipoPct?`<div style="flex:1;min-width:120px"><div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Anticipo (${info.anticipoPct}%)</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--amber)">${fmtFull(info.montoContrato*info.anticipoPct/100)}</div></div>`:'';
+    const plazo=info.inicio&&info.fin?`<div style="flex:1;min-width:120px"><div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Plazo</div><div style="font-size:12px;font-weight:700">${info.inicio} → ${info.fin}</div></div>`:'';
+    obraInfoCard.innerHTML=contrato+anticipo+plazo;
+  }else if(obraInfoCard){obraInfoCard.remove();}
   const txs=state.transactions.filter(t=>t.obraId===activeProject);
-  const total=txs.reduce((s,t)=>s+(t.monto||0),0);
-  const ef=txs.filter(t=>t.metodo==='EFECTIVO').reduce((s,t)=>s+t.monto,0);
-  const tr=txs.filter(t=>t.metodo==='TRANSFERENCIA').reduce((s,t)=>s+t.monto,0);
+  const gastos=txs.filter(t=>t.tipo!=='INGRESO');
+  const ingresos=txs.filter(t=>t.tipo==='INGRESO');
+  const totalGastos=gastos.reduce((s,t)=>s+(t.monto||0),0);
+  const totalIngresos=ingresos.reduce((s,t)=>s+(t.monto||0),0);
+  const saldo=totalIngresos-totalGastos;
   const wa=new Date(Date.now()-7*86400000);
   const wt=txs.filter(t=>t.fecha&&new Date(t.fecha+'T12:00:00')>=wa);
-  document.getElementById('kpi-total').textContent=fmt(total);
-  document.getElementById('kpi-txcount').textContent=txs.length+' registros';
+  document.getElementById('kpi-total').textContent=fmt(totalGastos);
+  document.getElementById('kpi-txcount').textContent=gastos.length+' gastos';
+  document.getElementById('kpi-ingresos').textContent=fmt(totalIngresos);
+  document.getElementById('kpi-ing-count').textContent=ingresos.length+' pago'+(ingresos.length!==1?'s':'');
+  const saldoEl=document.getElementById('kpi-saldo');
+  saldoEl.textContent=fmt(Math.abs(saldo));
+  saldoEl.style.color=saldo>=0?'var(--green)':'var(--red)';
   document.getElementById('kpi-week').textContent=fmt(wt.reduce((s,t)=>s+t.monto,0));
   document.getElementById('kpi-weekcount').textContent=wt.length+' mov.';
-  document.getElementById('kpi-ef').textContent=fmt(ef);
-  document.getElementById('kpi-tr').textContent=fmt(tr);
   renderMiniChart(txs);renderConceptBars(txs,'conceptList',5);renderRecent(txs);
 }
 
@@ -878,9 +942,11 @@ function makeTxItem(t,i){
   const icon=ICONS[t.concepto]||'📦',bg=BGMAP[t.concepto]||'rgba(100,116,139,.15)';
   const fp=t.folio?`<span style="font-size:9px;background:rgba(0,212,255,.1);color:var(--accent);padding:1px 6px;border-radius:4px;font-family:var(--mono)">${t.folio}</span>`:'';
   const ap=t.scanned?'<span class="tx-badge badge-ai">✨IA</span>':'';
-  const amtColor=t.monto<0?'style="color:var(--red)"':'';
+  const esIngreso=t.tipo==='INGRESO';
+  const amtColor=esIngreso?'style="color:var(--green)"':t.monto<0?'style="color:var(--red)"':'';
+  const ingBadge=esIngreso?'<span class="ingreso-badge">📥 INGRESO</span>':'';
   el.onclick=()=>openDetail(t.id);
-  el.innerHTML=`<div class="tx-icon" style="background:${bg}">${icon}</div><div class="tx-info"><div class="tx-desc">${t.descripcion||'—'}</div><div class="tx-meta">${getBadge(t.metodo)}${ap}<span>${t.proveedor||''}</span>${fp}<span>${t.fecha||''}</span></div></div><div class="tx-amount" ${amtColor}>${fmtFull(t.monto)}</div>`;
+  el.innerHTML=`<div class="tx-icon" style="background:${esIngreso?'rgba(0,230,118,.15)':bg}">${esIngreso?'📥':icon}</div><div class="tx-info"><div class="tx-desc">${t.descripcion||'—'}</div><div class="tx-meta">${getBadge(t.metodo)}${ap}${ingBadge}<span>${t.proveedor||''}</span>${fp}<span>${t.fecha||''}</span></div></div><div class="tx-amount" ${amtColor}>${esIngreso?'+':''}${fmtFull(t.monto)}</div>`;
   return el;
 }
 
@@ -1192,6 +1258,7 @@ function openNewTx(pre){
     document.getElementById('f-iva').value=pre.iva||'';
     document.getElementById('f-uuid').value=pre.uuid||'';
     document.getElementById('f-fecha').value=pre.fecha||today();
+    setTipo(pre.tipo||'GASTO');
     document.getElementById('f-concepto').value=pre.concepto||'MATERIALES';
     if(pre.obraId)document.getElementById('f-obra').value=pre.obraId;
     setMethod(pre.metodo||'EFECTIVO');
@@ -1201,26 +1268,46 @@ function openNewTx(pre){
     ['f-monto','f-desc','f-prov','f-nota','f-folio','f-rfc','f-subtotal','f-iva','f-uuid'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('f-fecha').value=today();
     setMethod('EFECTIVO');
+    setTipo('GASTO');
   }
   document.getElementById('newTxModal').classList.add('open');
   setTimeout(()=>document.getElementById('f-monto').focus(),300);
 }
 function setMethod(m){activeMethod=m;document.getElementById('btn-ef').className='method-btn'+(m==='EFECTIVO'?' active-ef':'');document.getElementById('btn-tr').className='method-btn'+(m==='TRANSFERENCIA'?' active-tr':'');document.getElementById('btn-tc').className='method-btn'+(m==='TARJETA'?' active-tr':'');}
 async function saveTx(){
-  const monto=parseFloat(document.getElementById('f-monto').value);
+  let monto=parseFloat(document.getElementById('f-monto').value);
   const desc=document.getElementById('f-desc').value.trim();
   if(!monto||monto===0){shakeInput('f-monto');return;}
   if(!desc){shakeInput('f-desc');return;}
+  const concepto=getConceptoValue();
+  if(!concepto)return;
+  // Ingresos se guardan como positivos con tipo='INGRESO'
+  const esIngreso=activeTipo==='INGRESO';
+  const montoFinal=Math.abs(monto);
   const sub=parseFloat(document.getElementById('f-subtotal').value)||null;
   const iva=parseFloat(document.getElementById('f-iva').value)||null;
-  const fields={monto,descripcion:desc,proveedor:document.getElementById('f-prov').value.trim(),concepto:document.getElementById('f-concepto').value,obraId:document.getElementById('f-obra').value,fecha:document.getElementById('f-fecha').value,metodo:activeMethod,nota:document.getElementById('f-nota').value.trim(),folio:document.getElementById('f-folio').value.trim(),rfcProveedor:document.getElementById('f-rfc').value.trim().toUpperCase(),subtotal:sub,iva,uuid:document.getElementById('f-uuid').value.trim().toUpperCase()};
+  const fields={
+    monto:montoFinal,
+    tipo:activeTipo,
+    descripcion:desc,
+    proveedor:document.getElementById('f-prov').value.trim(),
+    concepto,
+    obraId:document.getElementById('f-obra').value,
+    fecha:document.getElementById('f-fecha').value,
+    metodo:activeMethod,
+    nota:document.getElementById('f-nota').value.trim(),
+    folio:document.getElementById('f-folio').value.trim(),
+    rfcProveedor:document.getElementById('f-rfc').value.trim().toUpperCase(),
+    subtotal:sub,iva,
+    uuid:document.getElementById('f-uuid').value.trim().toUpperCase()
+  };
   if(editingTxId){
     const idx=state.transactions.findIndex(t=>t.id===editingTxId);
     if(idx>=0)state.transactions[idx]={...state.transactions[idx],...fields,updatedAt:new Date().toISOString()};
     editingTxId=null;showToast('✅ Registro actualizado');
   }else{
     state.transactions.push({id:uid(),...fields,scanned:false,attachedFile:null,createdAt:new Date().toISOString()});
-    showToast('✅ Gasto registrado: '+fmt(monto));
+    showToast((esIngreso?'✅ Ingreso registrado: ':'✅ Gasto registrado: ')+fmt(montoFinal));
   }
   await saveState();document.getElementById('newTxModal').classList.remove('open');renderDash();renderList();
 }
@@ -1493,6 +1580,81 @@ function renderProvDetail(container,provName){
     el.innerHTML=`<div style="width:36px;height:36px;border-radius:10px;background:rgba(0,212,255,.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${icon}</div><div class="ins-det-info"><div class="ins-det-prov" style="font-size:12px">${(t.descripcion||'').substring(0,50)}</div><div class="ins-det-meta">${t.fecha||''} · ${t.folio||''} · ${t.metodo||''}</div></div><div class="ins-det-amt">${fmtFull(t.monto)}</div>`;
     container.appendChild(el);
   });
+}
+
+// ── TIPO GASTO/INGRESO ───────────────────────────────────────
+let activeTipo = 'GASTO';
+function setTipo(t){
+  activeTipo=t;
+  const amtInput=document.getElementById('f-monto');
+  const isIngreso=t==='INGRESO';
+  document.getElementById('btn-tipo-gasto').className='tipo-btn'+(t==='GASTO'?' active-gasto':'');
+  document.getElementById('btn-tipo-ingreso').className='tipo-btn'+(t==='INGRESO'?' active-ingreso':'');
+  if(amtInput){amtInput.style.borderColor=isIngreso?'var(--green)':'var(--accent2)';amtInput.style.color=isIngreso?'var(--green)':'var(--accent2)';}
+  // Swap concepto options for ingresos
+  const sel=document.getElementById('f-concepto');if(!sel)return;
+  if(isIngreso){
+    sel.innerHTML=`<option value="ANTICIPO">Anticipo</option><option value="ESTIMACION">Estimación</option><option value="PAGO PARCIAL">Pago Parcial</option><option value="FINIQUITO">Finiquito</option><option value="DEDUCCION">Deducción</option><option value="OTRO INGRESO">Otro Ingreso</option><option value="__NUEVO__">＋ Nuevo…</option>`;
+  } else {
+    sel.innerHTML=`<option value="CIMENTACION">Cimentación</option><option value="MANO DE OBRA">Mano de Obra</option><option value="MATERIALES">Materiales</option><option value="ELECTRICO">Eléctrico</option><option value="HERRAMIENTA">Herramienta / Renta</option><option value="GASTOS OBRA">Gastos de Obra</option><option value="GASTOS ADMON">Gastos Admón</option><option value="ARCOTECHO">Arcotecho</option><option value="PLOMERIA">Plomería</option><option value="ESTRUCTURA">Estructura</option><option value="ANTICIPO">Anticipo</option><option value="ESTIMACION">Estimación</option><option value="FINIQUITO">Finiquito</option><option value="OTRO">Otro</option><option value="__NUEVO__">＋ Nuevo concepto…</option>`;
+    // Add custom concepts saved by user
+    const custom=JSON.parse(localStorage.getItem('custom_conceptos')||'[]');
+    custom.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.insertBefore(o,sel.lastElementChild);});
+  }
+}
+
+function checkConceptoOtro(){
+  const sel=document.getElementById('f-concepto');
+  const customInp=document.getElementById('f-concepto-custom');
+  if(sel.value==='__NUEVO__'){customInp.style.display='block';customInp.focus();}
+  else customInp.style.display='none';
+}
+
+function getConceptoValue(){
+  const sel=document.getElementById('f-concepto');
+  if(sel.value==='__NUEVO__'){
+    const custom=document.getElementById('f-concepto-custom').value.trim().toUpperCase();
+    if(!custom){shakeInput('f-concepto-custom');return null;}
+    // Save custom concept
+    const saved=JSON.parse(localStorage.getItem('custom_conceptos')||'[]');
+    if(!saved.includes(custom)){saved.push(custom);localStorage.setItem('custom_conceptos',JSON.stringify(saved));}
+    return custom;
+  }
+  return sel.value;
+}
+
+// ── OBRA INFO ────────────────────────────────────────────────
+function openObraInfo(){
+  const p=state.projects.find(x=>x.id===activeProject);if(!p)return;
+  const info=p.info||{};
+  document.getElementById('oi-cliente').value=info.cliente||'';
+  document.getElementById('oi-contrato').value=info.contrato||'';
+  document.getElementById('oi-inicio').value=info.inicio||'';
+  document.getElementById('oi-fin').value=info.fin||'';
+  document.getElementById('oi-monto-contrato').value=info.montoContrato||'';
+  document.getElementById('oi-anticipo-pct').value=info.anticipoPct||'';
+  document.getElementById('oi-direccion').value=info.direccion||p.location||'';
+  document.getElementById('oi-responsable').value=info.responsable||'Arq. Adolfo Maldonado Gutiérrez';
+  document.getElementById('oi-notas').value=info.notas||'';
+  document.getElementById('obraInfoModal').classList.add('open');
+}
+async function saveObraInfo(){
+  const p=state.projects.find(x=>x.id===activeProject);if(!p)return;
+  p.info={
+    cliente:document.getElementById('oi-cliente').value.trim(),
+    contrato:document.getElementById('oi-contrato').value.trim(),
+    inicio:document.getElementById('oi-inicio').value,
+    fin:document.getElementById('oi-fin').value,
+    montoContrato:parseFloat(document.getElementById('oi-monto-contrato').value)||0,
+    anticipoPct:parseFloat(document.getElementById('oi-anticipo-pct').value)||0,
+    direccion:document.getElementById('oi-direccion').value.trim(),
+    responsable:document.getElementById('oi-responsable').value.trim(),
+    notas:document.getElementById('oi-notas').value.trim(),
+  };
+  await saveState();
+  document.getElementById('obraInfoModal').classList.remove('open');
+  showToast('✅ Información de obra guardada');
+  renderDash();
 }
 
 // ── SEED DATA ─────────────────────────────────────────────────
