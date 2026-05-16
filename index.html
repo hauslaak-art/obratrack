@@ -977,6 +977,7 @@ function openDetail(id){
     <div class="detail-section"><div class="detail-section-title">🕐 Registro</div>
       <div class="detail-row"><span class="detail-key">Registrado</span><span class="detail-val mono" style="font-size:10px">${new Date(t.createdAt).toLocaleString('es-MX')}</span></div>
     </div>
+    ${t.hasFile?`<button class="submit-btn" id="view-file-btn-${id}" onclick="viewAttachment('${id}')" style="background:rgba(109,40,217,.15);border:1.5px solid rgba(167,139,250,.3);color:#a78bfa;margin-bottom:8px">📄 Ver archivo adjunto</button>`:''}
     <button class="submit-btn" onclick="openEditFromDetail('${id}')" style="background:var(--surface2);color:var(--text);border:1.5px solid var(--border);margin-bottom:8px">✏️ Editar registro</button>
     <button class="detail-del-btn" onclick="delTx('${id}')">🗑 Eliminar este registro</button>`;
   document.getElementById('detailModal').classList.add('open');
@@ -1384,7 +1385,7 @@ async function handleFile(e){
   try{
     const base64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>res(ev.target.result.split(',')[1]);r.onerror=()=>rej(new Error('Error leyendo archivo'));r.readAsDataURL(file);});
     const isPDF=file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf');
-    pendingFile={name:file.name,type:file.type,size:file.size};
+    pendingFile={name:file.name,type:file.type,size:file.size,base64};
     const result=await callClaudeOCR(base64,isPDF,file.type);
     clearInterval(iv);if(!result)throw new Error('No se pudo extraer información');
     pendingAi=result;showAiResult(result);
@@ -1440,14 +1441,21 @@ Infiere el concepto del tipo de producto. Campos no disponibles: null.`;
       throw new Error('Error de red: '+netErr.message);
     }
   }
-  if(res.status===401)throw new Error('Error 401 — configura el proxy en ⚙️ o usa desde claude.ai');
-  if(!res.ok)throw new Error('Error HTTP '+res.status);
-  const data=await res.json();
+  if(res.status===401)throw new Error('API key inválida o expirada — verifica en Cloudflare');
+  if(!res.ok){
+    let errMsg='Error HTTP '+res.status;
+    try{const errData=await res.json();errMsg=errData.error?.message||errMsg;}catch(e){}
+    throw new Error(errMsg);
+  }
+  let data;
+  try{data=await res.json();}catch(e){throw new Error('Respuesta inválida del servidor — intenta de nuevo');}
+  // Si la API devolvió un error en el cuerpo
+  if(data.error)throw new Error('API: '+( data.error.message||JSON.stringify(data.error)).substring(0,100));
   const rawText=(data.content||[]).map(b=>b.text||'').join('').trim();
-  if(!rawText)throw new Error('Respuesta vacía de la IA');
+  if(!rawText)throw new Error('La IA no devolvió texto — archivo muy grande o formato no soportado');
   const tries=[()=>JSON.parse(rawText),()=>JSON.parse(rawText.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim()),()=>{const m=rawText.match(/\{[\s\S]*\}/);if(!m)throw 0;return JSON.parse(m[0]);}];
   let parsed=null;for(const fn of tries){try{parsed=fn();break;}catch(e){}}
-  if(!parsed)throw new Error('No se pudo parsear la respuesta: '+rawText.substring(0,80));
+  if(!parsed)throw new Error('No se pudo leer el documento — intenta con mejor calidad');
   return parsed;
 }
 
@@ -1461,8 +1469,12 @@ function showAiResult(d){
 async function confirmAi(){
   if(!pendingAi)return;
   const d=pendingAi;
-  const tx={id:uid(),monto:d.monto||0,descripcion:d.descripcion||'',proveedor:d.proveedor||'',rfcProveedor:(d.rfcProveedor||'').toUpperCase(),concepto:d.concepto||'MATERIALES',obraId:activeProject,fecha:d.fecha||today(),metodo:d.metodo||'EFECTIVO',folio:d.folio||'',subtotal:d.subtotal||null,iva:d.iva||null,uuid:(d.uuid||'').toUpperCase(),nota:d.nota||'',scanned:true,attachedFile:null,createdAt:new Date().toISOString()};
-  state.transactions.push(tx);await saveState();pendingAi=null;pendingFile=null;
+  const txId=uid();
+  const tx={id:txId,monto:d.monto||0,descripcion:d.descripcion||'',proveedor:d.proveedor||'',rfcProveedor:(d.rfcProveedor||'').toUpperCase(),concepto:d.concepto||'MATERIALES',obraId:activeProject,fecha:d.fecha||today(),metodo:d.metodo||'EFECTIVO',folio:d.folio||'',subtotal:d.subtotal||null,iva:d.iva||null,uuid:(d.uuid||'').toUpperCase(),nota:d.nota||'',scanned:true,hasFile:!!(pendingFile?.base64),fileType:pendingFile?.type||null,fileName:pendingFile?.name||null,attachedFile:null,createdAt:new Date().toISOString()};
+  state.transactions.push(tx);await saveState();
+  // Guardar archivo en nube en background
+  if(pendingFile?.base64) saveFileToCloud(txId,pendingFile.base64,pendingFile.type,pendingFile.name);
+  pendingAi=null;pendingFile=null;
   document.getElementById('scanModal').classList.remove('open');renderDash();renderList();
   showToast('✅ Factura registrada: '+fmt(tx.monto));
 }
@@ -1728,6 +1740,47 @@ function saveSettings(){
   saveProxy();
   document.getElementById('settingsModal').classList.remove('open');
   showToast('✅ Configuración guardada');
+}
+
+// ── ARCHIVOS EN LA NUBE ──────────────────────────────────────
+async function saveFileToCloud(txId, base64, type, name){
+  const proxyUrl=localStorage.getItem('cfg_proxy_url');
+  if(!proxyUrl||!base64)return;
+  try{
+    await fetch(proxyUrl,{method:'POST',
+      headers:{'Content-Type':'application/json','x-hl-action':'file-save'},
+      body:JSON.stringify({id:txId,data:base64,type,name})
+    });
+  }catch(e){console.warn('File save failed:',e.message);}
+}
+
+async function loadFileFromCloud(txId){
+  const proxyUrl=localStorage.getItem('cfg_proxy_url');
+  if(!proxyUrl)return null;
+  try{
+    const r=await fetch(proxyUrl,{method:'POST',
+      headers:{'Content-Type':'application/json','x-hl-action':'file-load'},
+      body:JSON.stringify({id:txId})
+    });
+    const d=await r.json();
+    return d.empty?null:d;
+  }catch(e){return null;}
+}
+
+async function viewAttachment(txId){
+  const t=state.transactions.find(x=>x.id===txId);if(!t)return;
+  const btn=document.getElementById('view-file-btn-'+txId);
+  if(btn){btn.textContent='⏳ Cargando…';btn.disabled=true;}
+  const fileData=await loadFileFromCloud(txId);
+  if(btn){btn.textContent='📄 Ver archivo';btn.disabled=false;}
+  if(!fileData||!fileData.data){showToast('Archivo no encontrado en la nube',true);return;}
+  const byteChars=atob(fileData.data);
+  const byteArr=new Uint8Array(byteChars.length);
+  for(let i=0;i<byteChars.length;i++)byteArr[i]=byteChars.charCodeAt(i);
+  const blob=new Blob([byteArr],{type:fileData.type||'application/pdf'});
+  const url=URL.createObjectURL(blob);
+  window.open(url,'_blank');
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
 }
 
 // ── GMAIL INTEGRATION ─────────────────────────────────────────
