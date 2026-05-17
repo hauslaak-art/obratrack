@@ -387,6 +387,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <div class="ins-tab" onclick="setInsTab(this,'electrico')">⚡ Eléctrico</div>
     <div class="ins-tab" onclick="setInsTab(this,'servicios')">🏗️ Servicios</div>
     <div class="ins-tab" onclick="setInsTab(this,'proveedores')">🏢 Proveedores</div>
+    <div class="ins-tab" onclick="setInsTab(this,'precios')">💰 Precios</div>
+    <div class="ins-tab" onclick="setInsTab(this,'inventario')">📦 Inventario</div>
     <div class="ins-tab" onclick="setInsTab(this,'todos')">📋 Todos</div>
   </div>
   <div class="ins-search"><span class="si">🔍</span><input id="insSearch" placeholder="Buscar insumo o proveedor…" oninput="renderInsumos()"></div>
@@ -442,12 +444,110 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 
 <!-- GMAIL SCAN OVERLAY (reusa scanModal) -->
 
+<!-- PRESUPUESTO VS REAL -->
+<div class="screen" id="screen-presup">
+  <div class="topbar">
+    <div><div class="topbar-brand">Presupuesto</div><div class="topbar-sub" id="presup-subtitle">vs Real</div></div>
+    <div class="topbar-right">
+      <div class="icon-btn" onclick="openEditPresupuesto()">✏️</div>
+    </div>
+  </div>
+  <div class="scroll">
+    <div id="presup-kpis" style="padding:14px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
+    <div class="sec-header" style="padding-top:16px"><span class="sec-title">Por Concepto</span></div>
+    <div id="presup-list" style="padding:0 16px;display:flex;flex-direction:column;gap:8px"></div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- AVANCE DE OBRA (FOTOS) -->
+<div class="screen" id="screen-avance">
+  <div class="topbar">
+    <div><div class="topbar-brand">Avance</div><div class="topbar-sub" id="avance-subtitle">fotografías de obra</div></div>
+    <div class="topbar-right">
+      <div class="icon-btn" onclick="openAddFoto()">📷</div>
+    </div>
+  </div>
+  <div class="ins-tab-bar" id="avanceTabBar">
+    <div class="ins-tab active" onclick="setAvanceTab(this,'galeria')">🖼️ Galería</div>
+    <div class="ins-tab" onclick="setAvanceTab(this,'concepto')">🏗️ Por Concepto</div>
+    <div class="ins-tab" onclick="setAvanceTab(this,'fecha')">📅 Por Fecha</div>
+  </div>
+  <div class="scroll">
+    <div id="avance-content" style="padding:12px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- APU GENERATOR -->
+<div class="screen" id="screen-apu">
+  <div class="topbar">
+    <div><div class="topbar-brand">Generador APU</div><div class="topbar-sub">SOP/2025-0017 · Haus Laak</div></div>
+    <div class="topbar-right">
+      <div class="icon-btn" id="apu-list-btn" onclick="showApuList()">📋</div>
+    </div>
+  </div>
+  <div class="ins-tab-bar" id="apuTabBar">
+    <div class="ins-tab active" onclick="setApuTab(this,'form')">➕ Nuevo APU</div>
+    <div class="ins-tab" onclick="setApuTab(this,'saved')">💾 Guardados</div>
+  </div>
+  <div class="scroll">
+    <!-- NUEVO APU FORM -->
+    <div id="apu-panel-form">
+      <div style="padding:14px 16px 0;display:flex;flex-direction:column;gap:10px">
+        <div class="form-group"><label class="form-label">Número de Concepto</label><input class="form-input" id="apu-num" placeholder="Ej: 01-01-001" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">Descripción del Concepto</label><input class="form-input" id="apu-desc" placeholder="Ej: Excavación en corte a cielo abierto" autocomplete="off"></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">Unidad</label>
+            <select class="form-select" id="apu-unidad">
+              <option value="m3">m³</option><option value="m2">m²</option><option value="ml">ml</option>
+              <option value="kg">kg</option><option value="ton">ton</option><option value="pza">pza</option>
+              <option value="jor">jor</option><option value="hr">hr</option><option value="global">global</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Rendimiento</label><input class="form-input" id="apu-rend" type="number" placeholder="1.00" step="0.001" value="1"></div>
+        </div>
+      </div>
+      <!-- INSUMOS TABLE -->
+      <div class="sec-header"><span class="sec-title">Insumos</span><span class="sec-action" onclick="addApuRow()">＋ Agregar</span></div>
+      <div id="apu-rows" style="padding:0 16px;display:flex;flex-direction:column;gap:6px"></div>
+      <!-- INSUMOS RAPIDOS -->
+      <div style="padding:8px 16px"><div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Insumos base HL 2026</div>
+        <div id="apu-quick-btns" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+      <!-- CARGOS -->
+      <div class="sec-header"><span class="sec-title">Cargos HL 2026</span></div>
+      <div style="padding:0 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin:0 16px">
+        <div id="apu-cargos-rows" style="padding:8px 0"></div>
+      </div>
+      <!-- RESULTADO -->
+      <div style="padding:16px 16px 0">
+        <div style="background:rgba(255,107,43,.08);border:1.5px solid rgba(255,107,43,.3);border-radius:14px;padding:16px;text-align:center">
+          <div style="font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Precio Unitario</div>
+          <div style="font-family:var(--mono);font-size:36px;font-weight:800;color:var(--accent2)" id="apu-pu-result">$0.00</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">por <span id="apu-unidad-label">unidad</span></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button onclick="saveApu()" class="submit-btn" style="flex:1">💾 Guardar APU</button>
+          <button onclick="exportApuExcel()" class="submit-btn" style="flex:0 0 auto;width:52px;background:var(--green)">📊</button>
+        </div>
+      </div>
+      <div style="height:20px"></div>
+    </div>
+    <!-- SAVED APUs -->
+    <div id="apu-panel-saved" style="display:none;padding:14px 16px;display:none;flex-direction:column;gap:8px"></div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <div class="bottom-nav">
   <div class="nav-item active" id="nav-dash" onclick="switchScreen('screen-dash');setNav('nav-dash')"><span class="nav-icon">🏠</span><span class="nav-label">Inicio</span></div>
   <div class="nav-item" id="nav-list" onclick="switchScreen('screen-list');setNav('nav-list')"><span class="nav-icon">📋</span><span class="nav-label">Registros</span></div>
   <div class="nav-item" id="nav-insumos" onclick="switchScreen('screen-insumos');setNav('nav-insumos');renderInsumos()"><span class="nav-icon">🔩</span><span class="nav-label">Desglose</span></div>
-  <div class="nav-item" id="nav-gmail" onclick="switchScreen('screen-gmail');setNav('nav-gmail')"><span class="nav-icon">📧</span><span class="nav-label">Correos</span></div>
+  <div class="nav-item" id="nav-presup" onclick="switchScreen('screen-presup');setNav('nav-presup')"><span class="nav-icon">📐</span><span class="nav-label">Presup.</span></div>
+  <div class="nav-item" id="nav-avance" onclick="switchScreen('screen-avance');setNav('nav-avance')"><span class="nav-icon">📸</span><span class="nav-label">Avance</span></div>
+  <div class="nav-item" id="nav-apu" onclick="switchScreen('screen-apu');setNav('nav-apu')"><span class="nav-icon">🧮</span><span class="nav-label">APU</span></div>
   <div class="nav-item" id="nav-stats" onclick="switchScreen('screen-stats');setNav('nav-stats')"><span class="nav-icon">📊</span><span class="nav-label">Análisis</span></div>
   <div class="nav-item" id="nav-export" onclick="switchScreen('screen-export');setNav('nav-export')"><span class="nav-icon">📤</span><span class="nav-label">Exportar</span></div>
 </div>
@@ -585,6 +685,53 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <!-- DETAIL MODAL -->
 <div class="modal-overlay" id="detailModal" onclick="closeOnBg(event,'detailModal')">
   <div class="modal" style="max-height:85dvh;overflow-y:auto" id="detailContent"></div>
+</div>
+
+<!-- PRESUPUESTO EDIT MODAL -->
+<div class="modal-overlay" id="presupModal" onclick="closeOnBg(event,'presupModal')">
+  <div class="modal" style="max-height:90dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Presupuesto <span>por Concepto</span></div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">Ingresa el monto presupuestado para cada concepto. La app comparará contra los gastos reales.</div>
+    <div id="presup-edit-rows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+    <button class="submit-btn" onclick="savePresupuesto()">💾 Guardar Presupuesto</button>
+  </div>
+</div>
+
+<!-- ADD FOTO MODAL -->
+<div class="modal-overlay" id="fotoModal" onclick="closeOnBg(event,'fotoModal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Foto de <span>Avance</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="foto-desc" type="text" placeholder="Ej: Colado de losa nivel 2"></div>
+      <div class="form-group"><label class="form-label">Concepto</label>
+        <select class="form-select" id="foto-concepto">
+          <option value="CIMENTACION">Cimentación</option><option value="ESTRUCTURA">Estructura</option>
+          <option value="MANO DE OBRA">Mano de Obra</option><option value="MATERIALES">Materiales</option>
+          <option value="ELECTRICO">Eléctrico</option><option value="PLOMERIA">Plomería</option>
+          <option value="HERRAMIENTA">Herramienta</option><option value="GASTOS OBRA">Gastos Obra</option><option value="OTRO">Otro</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Fecha</label><input class="form-input" id="foto-fecha" type="date"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="triggerFotoCapture('camera')" style="padding:16px;border-radius:12px;border:1.5px solid rgba(167,139,250,.4);background:rgba(109,40,217,.1);color:#c4b5fd;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px"><span style="font-size:28px">📷</span>Cámara</button>
+        <button onclick="triggerFotoCapture('file')" style="padding:16px;border-radius:12px;border:1.5px solid rgba(255,107,43,.4);background:rgba(255,107,43,.08);color:var(--accent2);font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px"><span style="font-size:28px">🖼️</span>Galería</button>
+      </div>
+      <div id="foto-preview" style="display:none;border-radius:12px;overflow:hidden;max-height:200px;background:var(--surface2)"></div>
+      <button class="submit-btn" id="foto-save-btn" onclick="saveFoto()" style="display:none">📸 Guardar Foto</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="foto-cam-input" accept="image/*" capture="environment" class="input-hidden" onchange="handleFotoFile(event)">
+<input type="file" id="foto-file-input" accept="image/*" class="input-hidden" onchange="handleFotoFile(event)">
+
+<!-- FOTO VIEWER MODAL -->
+<div class="modal-overlay" id="fotoViewModal" onclick="closeOnBg(event,'fotoViewModal')">
+  <div class="modal" style="padding-bottom:20px">
+    <div class="modal-handle"></div>
+    <div id="foto-view-content"></div>
+  </div>
 </div>
 
 <!-- OBRA INFO MODAL -->
@@ -836,6 +983,9 @@ function switchScreen(id){
   if(id==='screen-stats'){renderStats();if(statsTab==='anio')renderAnio();if(statsTab==='semanas')renderSemanas();}
   if(id==='screen-insumos')renderInsumos();
   if(id==='screen-gmail')initGmail();
+  if(id==='screen-presup')renderPresupuesto();
+  if(id==='screen-avance')renderAvance();
+  if(id==='screen-apu')initApu();
   if(id==='screen-export')updateExportLabels();
 }
 function setNav(id){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById(id).classList.add('active');}
@@ -954,6 +1104,29 @@ function openDetail(id){
   const t=state.transactions.find(x=>x.id===id);if(!t)return;
   const proj=state.projects.find(p=>p.id===t.obraId);
   const icon=ICONS[t.concepto]||'📦',bg=BGMAP[t.concepto]||'rgba(100,116,139,.15)';
+  // Partidas table
+  let partidasSection='';
+  if(t.partidas&&t.partidas.length){
+    const total=t.partidas.reduce((s,p)=>s+(p.importe||0),0);
+    partidasSection=`<div class="detail-section"><div class="detail-section-title">📦 Partidas (${t.partidas.length})</div>
+      <div style="overflow-x:auto;margin:-4px 0 4px">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:5px 4px;color:var(--muted);font-weight:600">Descripción</th>
+            <th style="text-align:right;padding:5px 4px;color:var(--muted);font-weight:600;white-space:nowrap">Cant.</th>
+            <th style="text-align:right;padding:5px 4px;color:var(--muted);font-weight:600;white-space:nowrap">P.Unit</th>
+            <th style="text-align:right;padding:5px 4px;color:var(--muted);font-weight:600;white-space:nowrap">Importe</th>
+          </tr>
+          ${t.partidas.map(p=>`<tr style="border-bottom:1px solid rgba(42,61,82,.4)">
+            <td style="padding:6px 4px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.desc||''}">${p.desc||'—'}</td>
+            <td style="text-align:right;padding:6px 4px;white-space:nowrap;font-family:var(--mono)">${p.cant||''} ${p.unidad||''}</td>
+            <td style="text-align:right;padding:6px 4px;font-family:var(--mono);color:var(--muted)">${p.pu!=null?fmtFull(p.pu):''}</td>
+            <td style="text-align:right;padding:6px 4px;font-family:var(--mono);color:var(--accent2);font-weight:700">${p.importe!=null?fmtFull(p.importe):''}</td>
+          </tr>`).join('')}
+        </table>
+      </div>
+    </div>`;
+  }
   let fiscal='';
   if(t.folio||t.rfcProveedor||t.uuid||t.subtotal!=null)
     fiscal=`<div class="detail-section"><div class="detail-section-title">📄 Datos Fiscales</div>${t.folio?`<div class="detail-row"><span class="detail-key">No. Factura</span><span class="detail-val accent">${t.folio}</span></div>`:''} ${t.rfcProveedor?`<div class="detail-row"><span class="detail-key">RFC Proveedor</span><span class="detail-val mono">${t.rfcProveedor}</span></div>`:''} ${t.subtotal!=null?`<div class="detail-row"><span class="detail-key">Subtotal</span><span class="detail-val mono">${fmtFull(t.subtotal)}</span></div>`:''} ${t.iva!=null?`<div class="detail-row"><span class="detail-key">IVA (16%)</span><span class="detail-val mono">${fmtFull(t.iva)}</span></div>`:''} ${t.uuid?`<div class="detail-row" style="flex-direction:column;gap:6px"><span class="detail-key">UUID SAT</span><div class="uuid-chip">${t.uuid}</div></div>`:''}</div>`;
@@ -965,6 +1138,7 @@ function openDetail(id){
       <div class="detail-amount-big" style="${t.monto<0?'color:var(--red)':''}">${fmtFull(t.monto)}</div>
       <div class="detail-concept-badge">${icon} ${t.concepto||'SIN CONCEPTO'}</div>
     </div>
+    ${partidasSection}
     <div class="detail-section"><div class="detail-section-title">📋 Detalle del Gasto</div>
       <div class="detail-row"><span class="detail-key">Descripción</span><span class="detail-val">${t.descripcion||'—'}</span></div>
       <div class="detail-row"><span class="detail-key">Proveedor</span><span class="detail-val">${t.proveedor||'—'}</span></div>
@@ -1403,10 +1577,25 @@ async function handleFile(e){
 }
 async function callClaudeOCR(base64,isPDF,mimeType){
   const mt=isPDF?'application/pdf':(mimeType||'image/jpeg');
-  const prompt=`Eres extractor de facturas mexicanas. Responde SOLO con JSON válido sin markdown.
-{"descripcion":"descripción concisa max 80 chars","proveedor":"nombre emisor","rfcProveedor":"RFC","monto":0,"subtotal":0,"iva":0,"folio":"serie+folio","uuid":"folio fiscal UUID","fecha":"YYYY-MM-DD","metodo":"TARJETA","concepto":"MATERIALES","nota":"sucursal u obs breve o null"}
-Conceptos válidos: MATERIALES,MANO DE OBRA,ELECTRICO,PLOMERIA,ESTRUCTURA,CIMENTACION,HERRAMIENTA,GASTOS OBRA,GASTOS ADMON,ARCOTECHO,OTRO
-Infiere el concepto del tipo de producto. Campos no disponibles: null.`;
+  const prompt=`Eres extractor de facturas mexicanas CFDI. Responde SOLO con JSON válido sin markdown ni texto adicional.
+{
+  "descripcion":"descripción general concisa max 80 chars",
+  "proveedor":"nombre emisor",
+  "rfcProveedor":"RFC emisor",
+  "monto":TOTAL_CON_IVA,
+  "subtotal":SUBTOTAL_SIN_IVA,
+  "iva":MONTO_IVA,
+  "folio":"serie+folio",
+  "uuid":"folio fiscal UUID SAT",
+  "fecha":"YYYY-MM-DD",
+  "metodo":"TARJETA o TRANSFERENCIA o EFECTIVO",
+  "concepto":"MATERIALES o MANO DE OBRA o ELECTRICO o PLOMERIA o ESTRUCTURA o CIMENTACION o HERRAMIENTA o GASTOS OBRA o GASTOS ADMON o ARCOTECHO o OTRO",
+  "nota":"sucursal u observación o null",
+  "partidas":[
+    {"desc":"DESCRIPCION PRODUCTO","cant":CANTIDAD,"unidad":"UNIDAD","pu":PRECIO_UNITARIO,"importe":IMPORTE}
+  ]
+}
+IMPORTANTE: extrae TODOS los renglones/partidas de la factura en el array "partidas". Si no hay partidas detalladas, pon array vacío []. Infiere el concepto del tipo de producto. Campos no disponibles: null.`;
 
   const payload={model:'claude-sonnet-4-6',max_tokens:900,messages:[{role:'user',content:[
     isPDF?{type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}}
@@ -1464,13 +1653,15 @@ function showAiResult(d){
   document.getElementById('scan-result').style.display='block';
   const proj=state.projects.find(p=>p.id===activeProject);
   const rows=[['Monto Total',d.monto!=null?fmtFull(d.monto):null],['Subtotal',d.subtotal!=null?fmtFull(d.subtotal):null],['IVA',d.iva!=null?fmtFull(d.iva):null],['Descripción',d.descripcion],['Proveedor',d.proveedor],['RFC',d.rfcProveedor],['Folio',d.folio],['Fecha',d.fecha],['Método',d.metodo],['Concepto',d.concepto]].filter(([,v])=>v);
-  document.getElementById('aiResultBox').innerHTML=`<div class="ai-result-header"><span style="font-size:16px">✨</span><span class="ai-result-badge">Lectura completada</span></div><div class="ai-result-rows">${rows.map(([k,v])=>`<div class="ai-result-row"><span class="ai-result-key">${k}</span><span class="ai-result-val">${v}</span></div>`).join('')}</div>${proj?`<div style="font-size:10px;color:var(--muted);margin-top:10px;text-align:center">Obra: <strong style="color:var(--accent)">${proj.name}</strong></div>`:''}`;
+  const partidas=(d.partidas||[]).slice(0,6);
+  const partidasHTML=partidas.length?`<div style="margin-top:12px;border-top:1px solid rgba(167,139,250,.2);padding-top:10px"><div style="font-size:9px;letter-spacing:2px;color:#a78bfa;text-transform:uppercase;font-weight:700;margin-bottom:8px">${partidas.length} partida${partidas.length!==1?'s':''}</div>${partidas.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(42,61,82,.4);font-size:11px"><span style="flex:1;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px">${p.cant} ${p.unidad} ${p.desc}</span><span style="font-family:var(--mono);color:var(--accent2);flex-shrink:0">${fmtFull(p.importe)}</span></div>`).join('')}</div>`:'';
+  document.getElementById('aiResultBox').innerHTML=`<div class="ai-result-header"><span style="font-size:16px">✨</span><span class="ai-result-badge">Lectura completada</span></div><div class="ai-result-rows">${rows.map(([k,v])=>`<div class="ai-result-row"><span class="ai-result-key">${k}</span><span class="ai-result-val">${v}</span></div>`).join('')}</div>${partidasHTML}${proj?`<div style="font-size:10px;color:var(--muted);margin-top:10px;text-align:center">Obra: <strong style="color:var(--accent)">${proj.name}</strong></div>`:''}`;
 }
 async function confirmAi(){
   if(!pendingAi)return;
   const d=pendingAi;
   const txId=uid();
-  const tx={id:txId,monto:d.monto||0,descripcion:d.descripcion||'',proveedor:d.proveedor||'',rfcProveedor:(d.rfcProveedor||'').toUpperCase(),concepto:d.concepto||'MATERIALES',obraId:activeProject,fecha:d.fecha||today(),metodo:d.metodo||'EFECTIVO',folio:d.folio||'',subtotal:d.subtotal||null,iva:d.iva||null,uuid:(d.uuid||'').toUpperCase(),nota:d.nota||'',scanned:true,hasFile:!!(pendingFile?.base64),fileType:pendingFile?.type||null,fileName:pendingFile?.name||null,attachedFile:null,createdAt:new Date().toISOString()};
+  const tx={id:txId,monto:d.monto||0,descripcion:d.descripcion||'',proveedor:d.proveedor||'',rfcProveedor:(d.rfcProveedor||'').toUpperCase(),concepto:d.concepto||'MATERIALES',obraId:activeProject,fecha:d.fecha||today(),metodo:d.metodo||'EFECTIVO',folio:d.folio||'',subtotal:d.subtotal||null,iva:d.iva||null,uuid:(d.uuid||'').toUpperCase(),nota:d.nota||'',partidas:(d.partidas||[]),scanned:true,hasFile:!!(pendingFile?.base64),fileType:pendingFile?.type||null,fileName:pendingFile?.name||null,attachedFile:null,createdAt:new Date().toISOString()};
   state.transactions.push(tx);await saveState();
   // Guardar archivo en nube en background
   if(pendingFile?.base64) saveFileToCloud(txId,pendingFile.base64,pendingFile.type,pendingFile.name);
@@ -1522,6 +1713,197 @@ function buildProveedoresMap(){
 }
 
 function setInsTab(el,tab){insTab=tab;insView='list';insDetailKey=null;document.querySelectorAll('.ins-tab').forEach(e=>e.classList.remove('active'));el.classList.add('active');document.getElementById('ins-back-btn').style.display='none';renderInsumos();}
+
+// ── CATÁLOGO DE PRECIOS ──────────────────────────────────────
+function buildPriceCatalog(){
+  const txs=state.transactions.filter(t=>t.obraId===activeProject&&t.partidas&&t.partidas.length);
+  const catalog={};
+  txs.forEach(t=>{
+    (t.partidas||[]).forEach(p=>{
+      if(!p.desc||!p.pu)return;
+      // Normalize key: uppercase, remove extra spaces
+      const key=p.desc.toUpperCase().trim().replace(/\s+/g,' ');
+      if(!catalog[key])catalog[key]={desc:key,unidad:p.unidad||'',entries:[],minPu:Infinity,maxPu:0,avgPu:0};
+      catalog[key].entries.push({
+        pu:p.pu,cant:p.cant,importe:p.importe,
+        proveedor:t.proveedor,fecha:t.fecha,txId:t.id
+      });
+      if(p.pu<catalog[key].minPu)catalog[key].minPu=p.pu;
+      if(p.pu>catalog[key].maxPu)catalog[key].maxPu=p.pu;
+    });
+  });
+  // Compute avg
+  Object.values(catalog).forEach(c=>{
+    c.avgPu=c.entries.reduce((s,e)=>s+e.pu,0)/c.entries.length;
+    c.entries.sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+    c.totalCant=c.entries.reduce((s,e)=>s+(e.cant||0),0);
+    c.totalGasto=c.entries.reduce((s,e)=>s+(e.importe||0),0);
+  });
+  return catalog;
+}
+
+// ── INVENTARIO DE MATERIALES ─────────────────────────────────
+function buildInventory(){
+  const txs = state.transactions.filter(t => t.obraId === activeProject);
+  const inv = {};
+  txs.forEach(t => {
+    const fecha = t.fecha || '';
+    const proveedor = t.proveedor || '';
+    // From partidas (facturas escaneadas)
+    if(t.partidas && t.partidas.length){
+      t.partidas.forEach(p => {
+        if(!p.desc || !p.cant) return;
+        const key = p.desc.toUpperCase().trim().replace(/\s+/g,' ');
+        if(!inv[key]) inv[key] = {desc:key, unidad:p.unidad||'', totalCant:0, totalGasto:0, compras:[], concepto:t.concepto};
+        inv[key].totalCant += p.cant;
+        inv[key].totalGasto += p.importe || (p.cant * (p.pu||0));
+        inv[key].compras.push({fecha, proveedor, cant:p.cant, pu:p.pu, importe:p.importe||0, txId:t.id});
+      });
+    }
+  });
+  return inv;
+}
+
+function renderInventario(container, search){
+  const inv = buildInventory();
+  let items = Object.values(inv);
+  if(search) items = items.filter(i => i.desc.toLowerCase().includes(search) || i.unidad.toLowerCase().includes(search));
+  items.sort((a,b) => b.totalGasto - a.totalGasto);
+
+  if(!items.length){
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📦</div><div class="empty-text">El inventario se construye automáticamente al escanear facturas con ✨ que tengan partidas detalladas</div></div>';
+    return;
+  }
+
+  // Summary strip
+  const strip = document.createElement('div');
+  strip.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px';
+  strip.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase">Materiales distintos</div>
+      <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);margin-top:4px">${items.length}</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase">Total invertido</div>
+      <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent2);margin-top:4px">${fmt(items.reduce((s,i)=>s+i.totalGasto,0))}</div>
+    </div>`;
+  container.appendChild(strip);
+
+  items.forEach((item, i) => {
+    const color = INS_COLORS[i % INS_COLORS.length];
+    const puPromedio = item.totalCant > 0 ? item.totalGasto / item.totalCant : 0;
+    const lastCompra = item.compras.sort((a,b) => b.fecha.localeCompare(a.fecha))[0];
+    const uniqueProvs = [...new Set(item.compras.map(c => c.proveedor))].filter(Boolean);
+
+    // Timeline mini bars (compras por fecha)
+    const byFecha = {};
+    item.compras.forEach(c => { byFecha[c.fecha] = (byFecha[c.fecha]||0) + c.cant; });
+    const fechas = Object.keys(byFecha).sort();
+    const maxCant = Math.max(...Object.values(byFecha));
+    const miniBars = fechas.slice(-8).map(f => {
+      const h = Math.max((byFecha[f]/maxCant)*28, 3);
+      return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="width:100%;height:28px;display:flex;align-items:flex-end">
+          <div style="width:100%;height:${h}px;background:${color};border-radius:2px 2px 0 0;opacity:.8" title="${f}: ${byFecha[f]} ${item.unidad}"></div>
+        </div>
+        <div style="font-size:6px;color:var(--muted);white-space:nowrap">${f.slice(5)}</div>
+      </div>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden';
+    card.innerHTML = `
+      <div style="padding:14px 14px 10px">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+          <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;margin-top:3px"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;line-height:1.3">${item.desc}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${item.compras.length} compra${item.compras.length!==1?'s':''} · ${uniqueProvs.length} proveedor${uniqueProvs.length!==1?'es':''}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px">
+          <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Total</div>
+            <div style="font-family:var(--mono);font-size:15px;font-weight:800;color:var(--accent)">${item.totalCant % 1 === 0 ? item.totalCant : item.totalCant.toFixed(1)}</div>
+            <div style="font-size:9px;color:var(--muted)">${item.unidad}</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Gastado</div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent2)">${fmt(item.totalGasto)}</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
+            <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">$/unit</div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green)">${fmtFull(puPromedio)}</div>
+          </div>
+        </div>
+        ${fechas.length > 1 ? `<div style="display:flex;gap:3px;height:40px;margin-bottom:8px">${miniBars}</div>` : ''}
+        <div style="font-size:10px;color:var(--muted)">
+          Proveedores: <span style="color:var(--text);font-weight:600">${uniqueProvs.slice(0,3).join(', ')}</span>
+          ${lastCompra ? ` · Última: <span style="color:var(--text)">${lastCompra.fecha}</span>` : ''}
+        </div>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function renderPrecios(container, search){
+  const catalog=buildPriceCatalog();
+  let items=Object.values(catalog);
+  if(search)items=items.filter(i=>i.desc.toLowerCase().includes(search)||i.entries.some(e=>e.proveedor&&e.proveedor.toLowerCase().includes(search)));
+  items.sort((a,b)=>b.totalGasto-a.totalGasto);
+
+  if(!items.length){
+    container.innerHTML='<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">Escanea facturas con ✨ para ver el catálogo de precios por partida</div></div>';
+    return;
+  }
+
+  items.forEach((item,i)=>{
+    const hasMulti=item.entries.length>1;
+    const diff=hasMulti?((item.maxPu-item.minPu)/item.minPu*100).toFixed(0):0;
+    const color=INS_COLORS[i%INS_COLORS.length];
+    // Group by proveedor
+    const byProv={};
+    item.entries.forEach(e=>{
+      const pk=e.proveedor||'Sin proveedor';
+      if(!byProv[pk])byProv[pk]={proveedor:pk,pus:[],fechas:[]};
+      byProv[pk].pus.push(e.pu);byProv[pk].fechas.push(e.fecha);
+    });
+    const provRows=Object.values(byProv).map(bp=>{
+      const avgP=bp.pus.reduce((s,v)=>s+v,0)/bp.pus.length;
+      const lastF=bp.fechas.sort().pop();
+      const isCheapest=Math.abs(avgP-item.minPu)<0.01;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(42,61,82,.3)">
+        ${isCheapest&&hasMulti?'<span style="font-size:10px">🏆</span>':'<span style="font-size:10px;opacity:0">·</span>'}
+        <span style="flex:1;font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${bp.proveedor}</span>
+        <span style="font-size:10px;color:var(--muted);flex-shrink:0">${lastF||''}</span>
+        <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:${isCheapest&&hasMulti?'var(--green)':'var(--accent2)'};flex-shrink:0">${fmtFull(avgP)}</span>
+      </div>`;
+    }).join('');
+
+    const card=document.createElement('div');
+    card.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:0';
+    card.innerHTML=`
+      <div style="padding:12px 14px 10px">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700;line-height:1.3">${item.desc}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${item.unidad} · ${item.entries.length} compra${item.entries.length!==1?'s':''} · ${fmtFull(item.totalGasto)} total</div>
+          </div>
+          ${hasMulti?`<div style="flex-shrink:0;text-align:right">
+            <div style="font-size:9px;color:var(--muted)">variación</div>
+            <div style="font-size:14px;font-weight:800;color:${diff>10?'var(--amber)':'var(--green)'}">${diff}%</div>
+          </div>`:''}
+        </div>
+        ${hasMulti?`<div style="display:flex;gap:16px;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:8px">
+          <div style="text-align:center;flex:1"><div style="font-size:9px;color:var(--muted);letter-spacing:1px">MÍN</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green)">${fmtFull(item.minPu)}</div></div>
+          <div style="text-align:center;flex:1"><div style="font-size:9px;color:var(--muted);letter-spacing:1px">PROM</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${fmtFull(item.avgPu)}</div></div>
+          <div style="text-align:center;flex:1"><div style="font-size:9px;color:var(--muted);letter-spacing:1px">MÁX</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--red)">${fmtFull(item.maxPu)}</div></div>
+        </div>`:`<div style="display:flex;justify-content:space-between;padding:4px 0"><span style="font-size:11px;color:var(--muted)">Precio unitario</span><span style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent2)">${fmtFull(item.minPu)}</span></div>`}
+        <div>${provRows}</div>
+      </div>`;
+    container.appendChild(card);
+  });
+}
 function insBack(){insView='list';insDetailKey=null;document.getElementById('ins-back-btn').style.display='none';renderInsumos();}
 function openInsDetail(key){insDetailKey=key;insView='detail';document.getElementById('ins-back-btn').style.display='flex';renderInsumos();}
 
@@ -1531,6 +1913,8 @@ function renderInsumos(){
   document.getElementById('ins-subtitle').textContent=proj?proj.name:'Haus Laak';
   const container=document.getElementById('insTable');container.innerHTML='';
   if(insTab==='proveedores'){renderProveedores(container,search);return;}
+  if(insTab==='precios'){renderPrecios(container,search);return;}
+  if(insTab==='inventario'){renderInventario(container,search);return;}
   if(insView==='detail'&&insDetailKey){renderInsDetail(container,insDetailKey);return;}
   const insMap=buildInsumosMap();
   let entries=Object.values(insMap);
@@ -1953,6 +2337,458 @@ function gmailExpired(){
 }
 
 // ── INIT ─────────────────────────────────────────────────────
+
+// ── PRESUPUESTO VS REAL ───────────────────────────────────────
+const CONCEPTOS_ALL = ['CIMENTACION','MANO DE OBRA','MATERIALES','ELECTRICO','HERRAMIENTA','GASTOS OBRA','GASTOS ADMON','ARCOTECHO','PLOMERIA','ESTRUCTURA','OTRO'];
+
+function openEditPresupuesto(){
+  const proj = state.projects.find(p=>p.id===activeProject); if(!proj) return;
+  const presup = proj.presupuesto || {};
+  const txs = state.transactions.filter(t=>t.obraId===activeProject&&t.tipo!=='INGRESO');
+  const conceptosUsados = [...new Set(txs.map(t=>t.concepto))];
+  const allC = [...new Set([...CONCEPTOS_ALL, ...conceptosUsados])];
+  document.getElementById('presup-edit-rows').innerHTML = allC.map(c=>`
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="flex:1;font-size:13px;font-weight:600">${ICONS[c]||'📦'} ${c}</span>
+      <input class="form-input" id="pb-${c.replace(/\s/g,'_')}" type="number" inputmode="decimal"
+        placeholder="0.00" value="${presup[c]||''}"
+        style="width:130px;text-align:right;font-family:var(--mono)">
+    </div>`).join('');
+  document.getElementById('presupModal').classList.add('open');
+}
+
+async function savePresupuesto(){
+  const proj = state.projects.find(p=>p.id===activeProject); if(!proj) return;
+  if(!proj.presupuesto) proj.presupuesto = {};
+  const allC = [...new Set([...CONCEPTOS_ALL, ...[...new Set(state.transactions.filter(t=>t.obraId===activeProject).map(t=>t.concepto))]])];
+  allC.forEach(c=>{
+    const el = document.getElementById('pb-'+c.replace(/\s/g,'_'));
+    if(el&&el.value) proj.presupuesto[c] = parseFloat(el.value)||0;
+    else delete proj.presupuesto[c];
+  });
+  await saveState();
+  document.getElementById('presupModal').classList.remove('open');
+  renderPresupuesto();
+  showToast('✅ Presupuesto guardado');
+}
+
+function renderPresupuesto(){
+  const proj = state.projects.find(p=>p.id===activeProject);
+  document.getElementById('presup-subtitle').textContent = proj ? proj.name : 'Haus Laak';
+  const presup = proj?.presupuesto || {};
+  const txs = state.transactions.filter(t=>t.obraId===activeProject&&t.tipo!=='INGRESO');
+  // Actual by concept
+  const actual = {};
+  txs.forEach(t=>{ actual[t.concepto]=(actual[t.concepto]||0)+(t.monto||0); });
+  const allC = [...new Set([...Object.keys(presup), ...Object.keys(actual)])];
+  const totalPresup = Object.values(presup).reduce((s,v)=>s+v,0);
+  const totalActual = Object.values(actual).reduce((s,v)=>s+v,0);
+  const pct = totalPresup>0 ? (totalActual/totalPresup*100) : 0;
+  const semaforoColor = pct>100?'var(--red)':pct>85?'var(--amber)':'var(--green)';
+  // KPIs
+  document.getElementById('presup-kpis').innerHTML = `
+    <div class="kpi-card c1"><div class="kpi-label">Presupuesto Total</div><div class="kpi-value accent">${fmt(totalPresup)}</div><div class="kpi-sub">definido</div></div>
+    <div class="kpi-card c2"><div class="kpi-label">Ejercido</div><div class="kpi-value orange">${fmt(totalActual)}</div><div class="kpi-sub">${pct.toFixed(1)}% del presupuesto</div></div>
+    <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:2px">Avance financiero</span>
+        <span style="font-family:var(--mono);font-size:14px;font-weight:700;color:${semaforoColor}">${pct.toFixed(1)}%</span>
+      </div>
+      <div style="height:12px;background:var(--surface3);border-radius:6px;overflow:hidden">
+        <div style="height:100%;width:${Math.min(pct,100)}%;background:${semaforoColor};border-radius:6px;transition:width .6s ease"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--muted)">
+        <span>${totalPresup>0?(totalPresup-totalActual>=0?'Disponible: '+fmt(totalPresup-totalActual):'⚠️ Excedido: '+fmt(totalActual-totalPresup)):''}</span>
+        <span>${totalPresup>0?fmt(totalPresup):''}</span>
+      </div>
+    </div>`;
+  // Concept rows
+  const list = document.getElementById('presup-list'); list.innerHTML='';
+  if(!allC.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📐</div><div class="empty-text">Toca ✏️ para definir el presupuesto por concepto</div></div>'; return; }
+  allC.filter(c=>presup[c]||actual[c]).sort((a,b)=>(presup[b]||0)-(presup[a]||0)).forEach((c,i)=>{
+    const p = presup[c]||0; const a = actual[c]||0;
+    const cp = p>0?(a/p*100):0;
+    const col = cp>100?'var(--red)':cp>85?'var(--amber)':'var(--green)';
+    const icon = ICONS[c]||'📦';
+    const card = document.createElement('div');
+    card.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;overflow:hidden';
+    card.innerHTML=`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:18px">${icon}</span>
+        <span style="font-size:13px;font-weight:700;flex:1">${c}</span>
+        ${p>0?`<span style="font-family:var(--mono);font-size:11px;color:${col};font-weight:700">${cp.toFixed(0)}%</span>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr ${p>0?'1fr':''};gap:8px;margin-bottom:10px">
+        ${p>0?`<div style="text-align:center"><div style="font-size:9px;color:var(--muted);letter-spacing:1px">PRESUP.</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${fmt(p)}</div></div>`:''}
+        <div style="text-align:center"><div style="font-size:9px;color:var(--muted);letter-spacing:1px">EJERCIDO</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent2)">${fmt(a)}</div></div>
+        ${p>0?`<div style="text-align:center"><div style="font-size:9px;color:var(--muted);letter-spacing:1px">${a<=p?'DISPONIBLE':'EXCEDIDO'}</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:${col}">${fmt(Math.abs(p-a))}</div></div>`:''}
+      </div>
+      ${p>0?`<div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${Math.min(cp,100).toFixed(0)}%;background:${col};border-radius:4px;transition:width .5s ease"></div>
+      </div>`:''}`;
+    list.appendChild(card);
+  });
+}
+
+// ── FOTOGRAFÍAS DE AVANCE ─────────────────────────────────────
+let pendingFoto = null;
+let avanceTab = 'galeria';
+
+function setAvanceTab(el, tab){
+  avanceTab=tab;
+  document.querySelectorAll('#avanceTabBar .ins-tab').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  renderAvance();
+}
+
+function openAddFoto(){
+  document.getElementById('foto-fecha').value = today();
+  document.getElementById('foto-desc').value = '';
+  document.getElementById('foto-preview').style.display = 'none';
+  document.getElementById('foto-save-btn').style.display = 'none';
+  pendingFoto = null;
+  document.getElementById('fotoModal').classList.add('open');
+}
+
+function triggerFotoCapture(mode){
+  if(mode==='camera') document.getElementById('foto-cam-input').click();
+  else document.getElementById('foto-file-input').click();
+}
+
+function handleFotoFile(e){
+  const file = e.target.files[0]; e.target.value=''; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    // Compress image using canvas
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 900;
+      let w=img.width, h=img.height;
+      if(w>MAX){h=Math.round(h*MAX/w);w=MAX;}
+      if(h>MAX){w=Math.round(w*MAX/h);h=MAX;}
+      const canvas = document.createElement('canvas');
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const base64 = canvas.toDataURL('image/jpeg',0.75).split(',')[1];
+      pendingFoto = {base64, type:'image/jpeg', name:file.name, w, h};
+      const preview = document.getElementById('foto-preview');
+      preview.style.display='block';
+      preview.innerHTML=`<img src="data:image/jpeg;base64,${base64}" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px">`;
+      document.getElementById('foto-save-btn').style.display='block';
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveFoto(){
+  if(!pendingFoto){showToast('Selecciona una foto primero',true);return;}
+  const desc = document.getElementById('foto-desc').value.trim();
+  if(!desc){shakeInput('foto-desc');return;}
+  const fotoId = 'foto-'+uid();
+  const foto = {
+    id: fotoId, obraId: activeProject,
+    desc, concepto: document.getElementById('foto-concepto').value,
+    fecha: document.getElementById('foto-fecha').value || today(),
+    createdAt: new Date().toISOString()
+  };
+  // Save metadata to state
+  if(!state.fotos) state.fotos=[];
+  state.fotos.push(foto);
+  await saveState();
+  // Save image to KV
+  const proxyUrl = localStorage.getItem('cfg_proxy_url');
+  if(proxyUrl){
+    showToast('📸 Subiendo foto…', false, true);
+    fetch(proxyUrl,{method:'POST',headers:{'Content-Type':'application/json','x-hl-action':'file-save'},
+      body:JSON.stringify({id:fotoId,data:pendingFoto.base64,type:'image/jpeg',name:foto.desc})
+    }).then(()=>showToast('✅ Foto guardada en la nube')).catch(()=>{});
+  }
+  pendingFoto=null;
+  document.getElementById('fotoModal').classList.remove('open');
+  renderAvance();
+  showToast('✅ Foto de avance registrada');
+}
+
+async function openFotoView(fotoId){
+  const foto = (state.fotos||[]).find(f=>f.id===fotoId); if(!foto) return;
+  const content = document.getElementById('foto-view-content');
+  content.innerHTML=`
+    <div style="text-align:center;padding:8px 0 16px">
+      <div style="font-size:16px;font-weight:800;margin-bottom:4px">${foto.desc}</div>
+      <div style="font-size:11px;color:var(--muted)">${ICONS[foto.concepto]||'📦'} ${foto.concepto} · ${foto.fecha}</div>
+    </div>
+    <div id="foto-view-img" style="border-radius:12px;overflow:hidden;min-height:120px;background:var(--surface2);display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+      <div style="font-size:24px;color:var(--muted)">⏳ Cargando…</div>
+    </div>
+    <button onclick="delFoto('${fotoId}')" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid rgba(255,68,68,.3);background:rgba(255,68,68,.08);color:var(--red);font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer">🗑 Eliminar foto</button>`;
+  document.getElementById('fotoViewModal').classList.add('open');
+  // Load from KV
+  loadFileFromCloud(fotoId).then(data=>{
+    if(data&&data.data){
+      document.getElementById('foto-view-img').innerHTML=`<img src="data:image/jpeg;base64,${data.data}" style="width:100%;border-radius:12px">`;
+    } else {
+      document.getElementById('foto-view-img').innerHTML='<div style="padding:20px;color:var(--muted);font-size:12px">Foto no disponible</div>';
+    }
+  });
+}
+
+async function delFoto(fotoId){
+  if(!confirm('¿Eliminar esta foto?')) return;
+  state.fotos = (state.fotos||[]).filter(f=>f.id!==fotoId);
+  await saveState();
+  document.getElementById('fotoViewModal').classList.remove('open');
+  renderAvance();
+  showToast('Foto eliminada');
+}
+
+function renderAvance(){
+  const proj = state.projects.find(p=>p.id===activeProject);
+  document.getElementById('avance-subtitle').textContent = proj ? proj.name : 'Haus Laak';
+  const fotos = (state.fotos||[]).filter(f=>f.obraId===activeProject);
+  const container = document.getElementById('avance-content');
+  container.innerHTML='';
+  if(!fotos.length){
+    container.style.display='flex';container.style.flexDirection='column';
+    container.innerHTML='<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📸</div><div class="empty-text">Toca 📷 para registrar fotos de avance de obra</div></div>';
+    return;
+  }
+  container.style.display='grid';container.style.gridTemplateColumns='1fr 1fr';
+  let sorted = [...fotos].sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  if(avanceTab==='concepto') sorted.sort((a,b)=>a.concepto.localeCompare(b.concepto));
+  sorted.forEach(f=>{
+    const card = document.createElement('div');
+    card.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer';
+    card.onclick = ()=>openFotoView(f.id);
+    card.innerHTML=`
+      <div style="height:80px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:24px">${ICONS[f.concepto]||'📦'}</div>
+      <div style="padding:8px">
+        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.desc}</div>
+        <div style="font-size:9px;color:var(--muted);margin-top:2px">${f.fecha}</div>
+      </div>`;
+    // Try to load thumbnail from KV
+    loadFileFromCloud(f.id).then(data=>{
+      if(data&&data.data){
+        card.querySelector('div').innerHTML=`<img src="data:image/jpeg;base64,${data.data}" style="width:100%;height:80px;object-fit:cover">`;
+      }
+    });
+    container.appendChild(card);
+  });
+}
+
+
+// ── APU GENERATOR ─────────────────────────────────────────────
+const HL_CARGOS = {indirectos:0.10, utilidad:0.20, financiamiento:0.005, vigilancia:0.025};
+const HL_INSUMOS_BASE = [
+  {id:'h-ayud',desc:'Cuadrilla ayudante general',unidad:'Jor',pu:782.62,tipo:'MO'},
+  {id:'h-alb',desc:'Cuadrilla albañil+ayudante',unidad:'Jor',pu:1743.54,tipo:'MO'},
+  {id:'h-font',desc:'Cuadrilla fontanero+ayudante',unidad:'Jor',pu:1921.83,tipo:'MO'},
+  {id:'h-fier',desc:'Cuadrilla fierrero+ayudante',unidad:'Jor',pu:1743.54,tipo:'MO'},
+  {id:'h-pint',desc:'Cuadrilla pintor+ayudante',unidad:'Jor',pu:1830.73,tipo:'MO'},
+  {id:'e-retro',desc:'Retroexcavadora JD 310L',unidad:'Hra',pu:646.03,tipo:'EQ'},
+  {id:'e-volt',desc:'Camión volteo 7m³',unidad:'Hra',pu:544.65,tipo:'EQ'},
+  {id:'e-plac',desc:'Placa vibratoria Mikasa',unidad:'Hra',pu:43.86,tipo:'EQ'},
+  {id:'m-tep',desc:'Tepetate puesto en obra',unidad:'m³',pu:257.15,tipo:'MAT'},
+  {id:'m-are',desc:'Arena de mina',unidad:'m³',pu:350.00,tipo:'MAT'},
+  {id:'m-agua',desc:'Agua en pipa',unidad:'m³',pu:135.00,tipo:'MAT'},
+  {id:'m-ac38',desc:'Acero 3/8"',unidad:'kg',pu:18.00,tipo:'MAT'},
+  {id:'a-c100',desc:'Concreto f\'c=100 (AUX)',unidad:'m³',pu:2269.78,tipo:'AUX'},
+  {id:'a-c150',desc:'Concreto f\'c=150 (AUX)',unidad:'m³',pu:2475.81,tipo:'AUX'},
+  {id:'a-c200',desc:'Concreto f\'c=200 (AUX)',unidad:'m³',pu:2666.54,tipo:'AUX'},
+  {id:'a-c250',desc:'Concreto f\'c=250 (AUX)',unidad:'m³',pu:2870.47,tipo:'AUX'},
+  {id:'a-mort13',desc:'Mortero 1:3 (AUX)',unidad:'m³',pu:2905.13,tipo:'AUX'},
+  {id:'m-cem',desc:'Cemento gris',unidad:'ton',pu:4685.00,tipo:'MAT'},
+  {id:'m-tab',desc:'Tabicón 10×14×28',unidad:'millar',pu:5350.00,tipo:'MAT'},
+];
+let apuRows = [];
+let savedApus = [];
+let currentApuId = null;
+let apuTabActive = 'form';
+
+function initApu(){
+  const proj = state.projects.find(p=>p.id===activeProject);
+  savedApus = proj?.apus || [];
+  if(apuTabActive==='saved') renderSavedApus();
+  renderApuQuickBtns();
+  if(apuRows.length===0) { apuRows=[]; recalcApu(); }
+}
+
+function setApuTab(el, tab){
+  apuTabActive=tab;
+  document.querySelectorAll('#apuTabBar .ins-tab').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('apu-panel-form').style.display = tab==='form'?'block':'none';
+  document.getElementById('apu-panel-saved').style.display = tab==='saved'?'flex':'none';
+  if(tab==='saved') renderSavedApus();
+}
+
+function renderApuQuickBtns(){
+  const container = document.getElementById('apu-quick-btns');
+  const TIPO_COLOR = {MAT:'rgba(0,212,255,.1)',MO:'rgba(0,230,118,.1)',EQ:'rgba(167,139,250,.1)',AUX:'rgba(255,193,7,.1)'};
+  const TIPO_TEXT = {MAT:'var(--accent)',MO:'var(--green)',EQ:'#a78bfa',AUX:'var(--amber)'};
+  container.innerHTML = HL_INSUMOS_BASE.map(ins=>`
+    <button onclick="addApuRowQuick('${ins.id}')" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border);background:${TIPO_COLOR[ins.tipo]};color:${TIPO_TEXT[ins.tipo]};font-size:10px;font-weight:700;font-family:var(--font);cursor:pointer;white-space:nowrap">${ins.desc.split(' ').slice(0,3).join(' ')}</button>`).join('');
+}
+
+function addApuRow(ins){
+  const id = 'row-'+Date.now();
+  apuRows.push({id, tipo:ins?.tipo||'MAT', desc:ins?.desc||'', unidad:ins?.unidad||'', cant:0, pu:ins?.pu||0});
+  renderApuRows();
+}
+function addApuRowQuick(insId){
+  const ins = HL_INSUMOS_BASE.find(i=>i.id===insId);
+  if(ins) addApuRow(ins);
+}
+function removeApuRow(id){ apuRows=apuRows.filter(r=>r.id!==id); renderApuRows(); recalcApu(); }
+
+function renderApuRows(){
+  const container = document.getElementById('apu-rows');
+  const TIPO_COLORS = {MAT:'var(--accent)',MO:'var(--green)',EQ:'#a78bfa',AUX:'var(--amber)'};
+  container.innerHTML = apuRows.map((r,i)=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px" id="apu-row-${r.id}">
+      <div style="display:flex;align-items:center;gap:6px">
+        <select onchange="apuRowChange('${r.id}','tipo',this.value)" style="width:60px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:${TIPO_COLORS[r.tipo]};font-size:10px;font-weight:700;font-family:var(--font);padding:4px">
+          <option value="MAT"${r.tipo==='MAT'?' selected':''}>MAT</option>
+          <option value="MO"${r.tipo==='MO'?' selected':''}>M.O.</option>
+          <option value="EQ"${r.tipo==='EQ'?' selected':''}>EQ</option>
+          <option value="AUX"${r.tipo==='AUX'?' selected':''}>AUX</option>
+        </select>
+        <input type="text" placeholder="Descripción del insumo" value="${r.desc}"
+          onchange="apuRowChange('${r.id}','desc',this.value)"
+          style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--font);padding:5px 8px;outline:none">
+        <button onclick="removeApuRow('${r.id}')" style="width:26px;height:26px;border-radius:6px;border:none;background:rgba(255,68,68,.12);color:var(--red);cursor:pointer;font-size:14px;flex-shrink:0">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:60px 1fr 1fr;gap:6px">
+        <input type="text" placeholder="m³" value="${r.unidad}"
+          onchange="apuRowChange('${r.id}','unidad',this.value)"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:11px;font-family:var(--font);padding:5px 6px;text-align:center;outline:none">
+        <input type="number" placeholder="Cantidad" value="${r.cant||''}"
+          onchange="apuRowChange('${r.id}','cant',parseFloat(this.value)||0)"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--mono);padding:5px 8px;outline:none">
+        <input type="number" placeholder="P.Unit" value="${r.pu||''}"
+          onchange="apuRowChange('${r.id}','pu',parseFloat(this.value)||0)"
+          style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-family:var(--mono);padding:5px 8px;outline:none">
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted)">
+        <span>Importe: <strong style="color:var(--accent2);font-family:var(--mono)">${fmtFull(r.cant*r.pu)}</strong></span>
+      </div>
+    </div>`).join('');
+}
+
+function apuRowChange(id, field, val){
+  const row = apuRows.find(r=>r.id===id); if(!row) return;
+  row[field]=val; recalcApu();
+}
+
+function recalcApu(){
+  const rend = parseFloat(document.getElementById('apu-rend')?.value)||1;
+  const unidad = document.getElementById('apu-unidad')?.value||'m³';
+  // CD by tipo
+  const byTipo = {MAT:0,MO:0,EQ:0,AUX:0};
+  apuRows.forEach(r=>{ byTipo[r.tipo]=(byTipo[r.tipo]||0)+(r.cant*r.pu); });
+  const CD = Object.values(byTipo).reduce((s,v)=>s+v,0);
+  const ind = CD*HL_CARGOS.indirectos;
+  const util = CD*HL_CARGOS.utilidad;
+  const fin = (CD+ind+util)*HL_CARGOS.financiamiento;
+  const vig = (CD+ind+util+fin)*HL_CARGOS.vigilancia;
+  const PU = (CD+ind+util+fin+vig)/rend;
+  // Render cargos
+  document.getElementById('apu-cargos-rows').innerHTML=`
+    ${['Materiales','Mano de Obra','Equipo','Auxiliares'].map((l,i)=>{const k=['MAT','MO','EQ','AUX'][i];return byTipo[k]>0?`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(42,61,82,.4);font-size:12px"><span style="color:var(--muted)">${l}</span><span style="font-family:var(--mono);color:var(--accent)">${fmtFull(byTipo[k])}</span></div>`:''}).join('')}
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(42,61,82,.4);font-size:12px"><span style="color:var(--muted)">Costo Directo</span><span style="font-family:var(--mono);font-weight:700;color:var(--text)">${fmtFull(CD)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11px;color:var(--muted)"><span>Indirectos (10%)</span><span style="font-family:var(--mono)">${fmtFull(ind)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11px;color:var(--muted)"><span>Utilidad (20%)</span><span style="font-family:var(--mono)">${fmtFull(util)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11px;color:var(--muted)"><span>Financiamiento (0.5%)</span><span style="font-family:var(--mono)">${fmtFull(fin)}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:11px;color:var(--muted)"><span>Vigilancia/Inspección (2.5%)</span><span style="font-family:var(--mono)">${fmtFull(vig)}</span></div>`;
+  document.getElementById('apu-pu-result').textContent = fmtFull(PU);
+  document.getElementById('apu-unidad-label').textContent = unidad;
+}
+
+async function saveApu(){
+  const desc = document.getElementById('apu-desc').value.trim();
+  if(!desc){shakeInput('apu-desc');return;}
+  const rend = parseFloat(document.getElementById('apu-rend').value)||1;
+  const unidad = document.getElementById('apu-unidad').value;
+  const proj = state.projects.find(p=>p.id===activeProject); if(!proj) return;
+  if(!proj.apus) proj.apus=[];
+  const apu={id:'apu-'+uid(),num:document.getElementById('apu-num').value.trim(),desc,unidad,rend,rows:[...apuRows],savedAt:new Date().toISOString()};
+  const existing = proj.apus.findIndex(a=>a.id===currentApuId);
+  if(existing>=0) proj.apus[existing]=apu; else proj.apus.push(apu);
+  savedApus=proj.apus;
+  await saveState();
+  showToast('✅ APU guardado: '+desc);
+  currentApuId=apu.id;
+}
+
+function renderSavedApus(){
+  const panel = document.getElementById('apu-panel-saved');
+  panel.style.cssText='display:flex;flex-direction:column;gap:8px;padding:14px 16px';
+  if(!savedApus.length){panel.innerHTML='<div class="empty"><div class="empty-icon">🧮</div><div class="empty-text">No hay APUs guardados. Crea uno en la pestaña Nuevo APU.</div></div>';return;}
+  panel.innerHTML=savedApus.map(a=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer" onclick="loadApu('${a.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font-size:13px;font-weight:700">${a.num?a.num+' — ':''} ${a.desc}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${a.unidad} · ${a.rows.length} insumos</div></div>
+        <button onclick="event.stopPropagation();exportApuExcelById('${a.id}')" style="padding:6px 10px;border-radius:8px;border:1px solid var(--green);background:rgba(0,230,118,.1);color:var(--green);font-size:11px;font-family:var(--font);cursor:pointer">📊 Excel</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadApu(apuId){
+  const apu = savedApus.find(a=>a.id===apuId); if(!apu) return;
+  document.getElementById('apu-num').value=apu.num||'';
+  document.getElementById('apu-desc').value=apu.desc||'';
+  document.getElementById('apu-unidad').value=apu.unidad||'m3';
+  document.getElementById('apu-rend').value=apu.rend||1;
+  apuRows=[...apu.rows]; currentApuId=apu.id;
+  setApuTab(document.querySelector('#apuTabBar .ins-tab'),'form');
+  document.querySelector('#apuTabBar .ins-tab').classList.add('active');
+  renderApuRows(); recalcApu();
+  showToast('APU cargado: '+apu.desc);
+}
+
+function exportApuExcel(){
+  const desc = document.getElementById('apu-desc').value || 'APU';
+  exportApuToExcel({num:document.getElementById('apu-num').value,desc,unidad:document.getElementById('apu-unidad').value,rend:parseFloat(document.getElementById('apu-rend').value)||1,rows:apuRows});
+}
+function exportApuExcelById(apuId){
+  const apu = savedApus.find(a=>a.id===apuId); if(!apu) return;
+  exportApuToExcel(apu);
+}
+function exportApuToExcel(apu){
+  const rend=apu.rend||1;
+  const byTipo={MAT:0,MO:0,EQ:0,AUX:0};
+  apu.rows.forEach(r=>{byTipo[r.tipo]=(byTipo[r.tipo]||0)+(r.cant*r.pu);});
+  const CD=Object.values(byTipo).reduce((s,v)=>s+v,0);
+  const ind=CD*HL_CARGOS.indirectos,util=CD*HL_CARGOS.utilidad;
+  const fin=(CD+ind+util)*HL_CARGOS.financiamiento,vig=(CD+ind+util+fin)*HL_CARGOS.vigilancia;
+  const PU=(CD+ind+util+fin+vig)/rend;
+  const wb=XLSX.utils.book_new();
+  const rows=[
+    ['ANÁLISIS DE PRECIO UNITARIO — HAUS LAAK CONSTRUCTORA','','','',''],
+    ['SOP/2025-0017 · Municipio de Querétaro','','','',''],
+    ['','','','',''],
+    ['Concepto:',apu.num||'','','',''],
+    ['Descripción:',apu.desc||'','','',''],
+    ['Unidad:',apu.unidad||'','Rendimiento:',rend,''],
+    ['','','','',''],
+    ['TIPO','DESCRIPCIÓN','UNIDAD','CANTIDAD','P.UNIT.','IMPORTE'],
+    ...apu.rows.map(r=>[r.tipo,r.desc,r.unidad,r.cant,r.pu,r.cant*r.pu]),
+    ['','','','','',''],
+    ['','','','','COSTO DIRECTO',CD],
+    ['','','','','Indirectos 10%',ind],
+    ['','','','','Utilidad 20%',util],
+    ['','','','','Financiamiento 0.5%',fin],
+    ['','','','','Vigilancia 2.5%',vig],
+    ['','','','','',''],
+    ['','','','','PRECIO UNITARIO',PU],
+  ];
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb,ws,'APU');
+  XLSX.writeFile(wb,'APU_'+(apu.desc||'concepto').replace(/\s+/g,'_')+'_'+today()+'.xlsx');
+  showToast('✅ Excel APU descargado');
+}
+
 // ── RESPALDO EMBEBIDO (2026-05-16 CORRECTO) ─────────────────────
 const FULL_BACKUP = {"projects":[{"id":"canchas-padel-final","name":"Canchas Pádel Final","location":"Querétaro"}],"transactions":[{"id":"cfdi-ventacero-fc50103306","monto":57.44,"descripcion":"Lente de Protección Color Obscuro — 2 pzas (F539)","proveedor":"VentAcero SAPI de CV (Pueblito Corregidora)","rfcProveedor":"VSA080917LY3","concepto":"HERRAMIENTA","obraId":"canchas-padel","fecha":"2026-03-20","metodo":"TARJETA","folio":"FC501/03306","subtotal":49.52,"iva":7.92,"uuid":"0083852C-61F5-441B-8DC1-2AAD62562DD9","nota":"Sucursal Pueblito Caja 0836","scanned":false,"attachedFile":null,"createdAt":"2026-03-20T10:27:59.000Z"},{"id":"cfdi-darinka-17160","monto":340,"descripcion":"ARMEX — 2 pzas (Vigas / Acero de refuerzo)","proveedor":"Darinka Anyelin Yañez Montaño","rfcProveedor":"YAMD891124NE5","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-03-18","metodo":"EFECTIVO","folio":"17160","subtotal":293.1,"iva":46.9,"uuid":"E50BE9CE-1446-42B1-A2FE-706E17405627","nota":"El Rocío, Querétaro","scanned":false,"attachedFile":null,"createdAt":"2026-03-18T14:30:06.000Z"},{"id":"cfdi-homedepot-4kaagji51407","monto":2389.99,"descripcion":"Cemento Portland Gris 25kg — 20 pzas","proveedor":"Home Depot México (Suc. 1170 Corregidora)","rfcProveedor":"HDM001017AS1","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-03-18","metodo":"EFECTIVO","folio":"4KAAGJI51407","subtotal":2060.34,"iva":329.65,"uuid":"6469F622-C434-4F8F-B6C0-963965947E3E","nota":"Suc. Corregidora Qro. Caja 024","scanned":false,"attachedFile":null,"createdAt":"2026-03-18T16:52:11.000Z"},{"id":"cfdi-cementos-abcd-6938","monto":612.48,"descripcion":"Tabique Rojo — 110 pzas ($4.80 c/u)","proveedor":"Cementos y Aceros ABCD","rfcProveedor":"CAA2403112M6","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-03-17","metodo":"TRANSFERENCIA","folio":"6938","subtotal":528,"iva":84.48,"uuid":"8DB851FC-6DFE-4C60-942C-9DD57342430E","nota":"Las Flores, Santiago de Querétaro","scanned":false,"attachedFile":null,"createdAt":"2026-03-17T13:26:14.000Z"},{"id":"cfdi-ceimposa-60014921","monto":191295.76,"descripcion":"Viguetas alma abierta + Bovedilla poliestireno — Sistema CEIMPOSA","proveedor":"Centro Modular de Poliestireno (CEIMPOSA)","rfcProveedor":"CMP8809291D5","concepto":"ESTRUCTURA","obraId":"canchas-padel","fecha":"2026-03-24","metodo":"TRANSFERENCIA","folio":"FEGAMA_F 60014921","subtotal":164910.15,"iva":26385.61,"uuid":"A58598EF-92A9-438B-A1E7-2874634428F5","nota":"PPD — Pagos: $16k+$50k+$34k+$91,375 = saldado","scanned":false,"attachedFile":null,"createdAt":"2026-03-24T17:56:16.000Z"},{"id":"cfdi-ventacero-fc50103307","monto":4715.1,"descripcion":"PTR 1\"×1\" cal.14 (11pz) + Solera 1/8\"×2\" + Soldadura KHAN 6013 1/8\" 25kg","proveedor":"VentAcero SAPI de CV (Pueblito Corregidora)","rfcProveedor":"VSA080917LY3","concepto":"ESTRUCTURA","obraId":"canchas-padel","fecha":"2026-03-20","metodo":"TRANSFERENCIA","folio":"FC501/03307","subtotal":4064.74,"iva":650.36,"uuid":"FECF1D94-D22A-4EC2-9EAA-43215507BB9F","nota":"Sucursal Pueblito Caja 0835 — desc. 2% aplicado","scanned":false,"attachedFile":null,"createdAt":"2026-03-20T11:05:40.000Z"},{"id":"cfdi-elektron-qff706539","monto":12675.94,"descripcion":"Conector PVC Pesado 2\" + Caja Interior 3F 4H 20C SQD P-9 (2 pzas c/u)","proveedor":"Elektron del Bajío SA de CV","rfcProveedor":"EBA8202225C7","concepto":"ELECTRICO","obraId":"canchas-padel","fecha":"2025-12-20","metodo":"TARJETA","folio":"I QFF 706539","subtotal":10927.54,"iva":1748.4,"uuid":"9833797D-F44A-4CB2-977A-8416524BF3E9","nota":"Suc. QRO CDR 5 de Febrero","scanned":false,"attachedFile":null,"createdAt":"2025-12-20T13:37:11.000Z"},{"id":"cfdi-cassa-oc20251219","monto":300000,"descripcion":"Supervisión de trabajos Canchas Padel UNIDEP","proveedor":"CASSA Construcciones del Bajío","rfcProveedor":"CCB1806268D7","concepto":"GASTOS ADMON","obraId":"canchas-padel","fecha":"2025-12-19","metodo":"TRANSFERENCIA","folio":"20251219154106-2332101737","subtotal":258620.69,"iva":41379.31,"uuid":"1062A2C1-7563-585D-9363-B8D688E4FE28","nota":"Supervisión externa Canchas Padel UNIDEP","scanned":false,"attachedFile":null,"createdAt":"2025-12-19T15:47:57.000Z"},{"id":"cfdi-sotrebik-a1758","monto":590000,"descripcion":"Trabajos de Obra y Administrativos Canchas Padel UNIDEP — Semana 1","proveedor":"Sotrebik Activos Company SA de CV","rfcProveedor":"SAC241015DG9","concepto":"GASTOS ADMON","obraId":"canchas-padel","fecha":"2025-12-31","metodo":"TRANSFERENCIA","folio":"A-1758","subtotal":508620.69,"iva":81379.31,"uuid":"0FBC25E3-E969-4C9E-A1E1-63E5C0B02913","nota":"Semana 1 — MAS0810247C0","scanned":false,"attachedFile":null,"createdAt":"2025-12-31T11:55:20.000Z"},{"id":"cfdi-elektron-qcf376951","monto":1761.62,"descripcion":"Mat. eléctrico: placas, conectores, condulet, caja intemperie, cable uso rudo, contactos","proveedor":"Elektron del Bajío SA de CV","rfcProveedor":"EBA8202225C7","concepto":"ELECTRICO","obraId":"canchas-padel","fecha":"2025-12-23","metodo":"TARJETA","folio":"QCF 376951","subtotal":1518.66,"iva":242.96,"uuid":"602E7423-721D-4231-9A65-CC6F6913C3F1","nota":"Suc. QRO Constituyentes","scanned":false,"attachedFile":null,"createdAt":"2025-12-23T12:54:23.000Z"},{"id":"cfdi-cassa-oc20251224","monto":440000,"descripcion":"Supervisión de trabajos Canchas Padel, Universidad","proveedor":"CASSA Construcciones del Bajío","rfcProveedor":"CCB1806268D7","concepto":"GASTOS ADMON","obraId":"canchas-padel","fecha":"2025-12-24","metodo":"TRANSFERENCIA","folio":"20251224120703-2349401737","subtotal":379310.34,"iva":60689.66,"uuid":"3286289C-D60D-508F-883E-AD7058A41F69","nota":"Supervisión externa Canchas Padel Universidad","scanned":false,"attachedFile":null,"createdAt":"2025-12-24T12:12:07.000Z"},{"id":"cfdi-elektron-qcf376792","monto":26980.2,"descripcion":"Inst. eléctrica: cable THW/XLP, tubería PVC, tablero QO, gabinetes, varillas CT, cinta, cemento","proveedor":"Elektron del Bajío SA de CV","rfcProveedor":"EBA8202225C7","concepto":"ELECTRICO","obraId":"canchas-padel","fecha":"2025-12-20","metodo":"TRANSFERENCIA","folio":"QCF 376792","subtotal":23258.86,"iva":3721.34,"uuid":"17EC6217-4BAC-4993-8097-4EBAD9DF46A4","nota":"Suc. QRO Constituyentes — instalación eléctrica principal","scanned":false,"attachedFile":null,"createdAt":"2025-12-20T13:35:40.000Z","updatedAt":"2026-04-22T14:54:11.610Z"},{"id":"cfdi-elektron-qcf377168","monto":1903.21,"descripcion":"Cable desnudo cal.12 (100m) + Poliflex naranja 3/4\" con guía (50m)","proveedor":"Elektron del Bajío SA de CV","rfcProveedor":"EBA8202225C7","concepto":"ELECTRICO","obraId":"canchas-padel","fecha":"2025-12-29","metodo":"TARJETA","folio":"QCF 377168","subtotal":1640.7,"iva":262.51,"uuid":"639DA701-1461-4276-BF1E-6256F5F1E83D","nota":"Suc. QRO Constituyentes","scanned":false,"attachedFile":null,"createdAt":"2025-12-29T11:53:11.000Z"},{"id":"cfdi-elektron-qcf377013","monto":2621.22,"descripcion":"Cable THW cal.12 negro 100m + cable THW cal.12 verde 100m","proveedor":"Elektron del Bajío SA de CV","rfcProveedor":"EBA8202225C7","concepto":"ELECTRICO","obraId":"canchas-padel","fecha":"2025-12-24","metodo":"TARJETA","folio":"QCF 377013","subtotal":2259.68,"iva":361.54,"uuid":"E73D1AB2-1F1A-4E76-8040-B77919D7E21A","nota":"Suc. QRO Constituyentes","scanned":false,"attachedFile":null,"createdAt":"2025-12-24T10:36:55.000Z"},{"id":"cfdi-sotrebik-a1759","monto":10000,"descripcion":"Trabajos de Obra y Administrativos Canchas Padel UNIDEP — Semana 2","proveedor":"Sotrebik Activos Company SA de CV","rfcProveedor":"SAC241015DG9","concepto":"GASTOS ADMON","obraId":"canchas-padel","fecha":"2025-12-31","metodo":"TRANSFERENCIA","folio":"A-1759","subtotal":8620.69,"iva":1379.31,"uuid":"C8F8881A-CE10-491A-AD4F-24717E05D10C","nota":"Semana 2","scanned":false,"attachedFile":null,"createdAt":"2025-12-31T11:55:59.000Z"},{"id":"cfdi-elektron-qcf376813","monto":66.64,"descripcion":"Abrazadera Omega E/V 2\" Anclo — 6 pzas","proveedor":"Elektron del Bajío SA de CV","rfcProveedor":"EBA8202225C7","concepto":"ELECTRICO","obraId":"canchas-padel","fecha":"2025-12-22","metodo":"TARJETA","folio":"QCF 376813","subtotal":57.45,"iva":9.19,"uuid":"9CC5B72E-7391-4213-A59A-7597C30D9159","nota":"Suc. QRO Constituyentes","scanned":false,"attachedFile":null,"createdAt":"2025-12-22T09:50:01.000Z"},{"id":"cfdi-sotrebik-a1760","monto":300000,"descripcion":"Trabajos de Obra y Administrativos Canchas Padel UNIDEP — Semana 3","proveedor":"Sotrebik Activos Company SA de CV","rfcProveedor":"SAC241015DG9","concepto":"GASTOS ADMON","obraId":"canchas-padel","fecha":"2025-12-31","metodo":"TRANSFERENCIA","folio":"A-1760","subtotal":258620.69,"iva":41379.31,"uuid":"95D04C92-A302-4B1A-A1E7-586E8674C171","nota":"Semana 3","scanned":false,"attachedFile":null,"createdAt":"2025-12-31T11:56:48.000Z"},{"id":"cfdi-sofimex-aa1621954","monto":45956.59,"descripcion":"Fianza de Anticipo Simple de Obra — Prima+DIV+Gastos (vigencia Nov 2025–Nov 2026)","proveedor":"Sofimex Institución de Garantías SA","rfcProveedor":"ASG950531ID1","concepto":"GASTOS OBRA","obraId":"canchas-padel","fecha":"2025-12-10","metodo":"TRANSFERENCIA","folio":"AA 1621954","subtotal":39617.75,"iva":6338.84,"uuid":"31290434-6B8E-4C24-B4AB-A82AA3924EC7","nota":"Fianza ante Banco Invex Fideicomiso 2183 — Monto $2,972,443","scanned":false,"attachedFile":null,"createdAt":"2025-12-10T17:36:32.000Z"},{"id":"cfdi-cafarel-m31005","monto":134540,"descripcion":"Plafón AM Fisurado 61x61cm 10pza/caja — 100 cajas (1,000 pzas)","proveedor":"Inmobiliaria Cafarel (ICA)","rfcProveedor":"ICA830129LU8","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2025-12-22","metodo":"TRANSFERENCIA","folio":"M-31005","subtotal":115982.76,"iva":18557.24,"uuid":"41FC7301-5C10-41D4-ADC0-72B00064EBEF","nota":"Cielo falso — Suc. San Pedrito Peñuelas Qro.","scanned":false,"attachedFile":null,"createdAt":"2025-12-22T16:41:34.000Z"},{"id":"cfdi-pcq-da00011689","monto":-240.42,"descripcion":"NOTA DE CRÉDITO — Dev. Jgo Reparación P/TQ-WC 2\" Coflex (392-PSA001)","proveedor":"Plomería y Cerámica de Querétaro SA de CV","rfcProveedor":"PCQ900419346","concepto":"PLOMERIA","obraId":"canchas-padel","fecha":"2026-03-10","metodo":"TARJETA","folio":"DA00011689","subtotal":-207.26,"iva":-33.16,"uuid":"8567C03C-D6C3-423C-8816-0339DEBFC1F5","nota":"E-Egreso / Nota devolución","scanned":false,"attachedFile":null,"createdAt":"2026-03-10T13:22:33.000Z"},{"id":"cfdi-homedepot-4kaagji60100","monto":3317.99,"descripcion":"Carretilla 5.5 pies cúbicos Truper — 2 pzas","proveedor":"Home Depot México (Suc. 1170 Corregidora)","rfcProveedor":"HDM001017AS1","concepto":"HERRAMIENTA","obraId":"canchas-padel","fecha":"2026-04-15","metodo":"TARJETA","folio":"4KAAGJI60100","subtotal":2860.34,"iva":457.65,"uuid":"237306FF-E6D8-44D4-BD1F-F6C2154E7E1C","nota":"Sustitución CFDI previo 8055475c","scanned":false,"attachedFile":null,"createdAt":"2026-04-15T17:55:38.000Z"},{"id":"cfdi-laminas-c6","monto":105466.75,"descripcion":"Lámina Lisa C-26 Pintro Blanca (73.2 LM) + Lámina R-101 C-26 x 48\" Pintro Blanca (547.2 LM)","proveedor":"Central de Láminas Querétaro","rfcProveedor":"CLQ080519DQA","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-16","metodo":"TRANSFERENCIA","folio":"C-6","subtotal":90919.61,"iva":14547.14,"uuid":"96D7FB7B-FD44-4097-B9A5-E3CD5F6AF5EE","nota":"PPD — Pago parcial $45k registrado (CRP P-2). Saldo $60,466.75","scanned":false,"attachedFile":null,"createdAt":"2026-04-16T09:10:28.000Z"},{"id":"cfdi-elektron-qcf384608","monto":202.13,"descripcion":"Contacto duplex 15A 125V 5-15R (6pz) + Chalupa plástico 3 mod (3pz)","proveedor":"Elektron del Bajío SA de CV","rfcProveedor":"EBA8202225C7","concepto":"ELECTRICO","obraId":"canchas-padel","fecha":"2026-04-16","metodo":"TARJETA","folio":"QCF 384608","subtotal":174.26,"iva":27.87,"uuid":"407A28E8-A1E9-4764-85AC-2503D8A98885","nota":"Suc. QRO Constituyentes","scanned":false,"attachedFile":null,"createdAt":"2026-04-16T08:42:10.000Z"},{"id":"cfdi-elektron-qcf384706","monto":822.07,"descripcion":"Cinta PVC Temflex 165 19mm×18m (1pz) + Poliflex naranja 3/4\" 50m","proveedor":"Elektron del Bajío SA de CV","rfcProveedor":"EBA8202225C7","concepto":"ELECTRICO","obraId":"canchas-padel","fecha":"2026-04-17","metodo":"TARJETA","folio":"QCF 384706","subtotal":708.69,"iva":113.38,"uuid":"C181B284-8A66-490C-B29A-C532725D51F9","nota":"Suc. QRO Constituyentes","scanned":false,"attachedFile":null,"createdAt":"2026-04-17T08:52:27.000Z"},{"id":"cfdi-homedepot-4kaagji60188","monto":1345,"descripcion":"Malla fibra de vidrio 1×50m 130gr — 1 pza","proveedor":"Home Depot México (Suc. 1170 Corregidora)","rfcProveedor":"HDM001017AS1","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-16","metodo":"TARJETA","folio":"4KAAGJI60188","subtotal":1159.48,"iva":185.52,"uuid":"AA968F6C-3F4F-4146-B0BC-2A716B3947F1","nota":"Suc. Corregidora Qro.","scanned":false,"attachedFile":null,"createdAt":"2026-04-16T09:03:01.000Z"},{"id":"cfdi-pcq-fa00239023","monto":3081.28,"descripcion":"Plomería PPR: válvulas esfera 32mm/25mm + codos 45° + tuercas unión + cinta teflón + sellador + conectores hembra","proveedor":"Plomería y Cerámica de Querétaro SA de CV","rfcProveedor":"PCQ900419346","concepto":"PLOMERIA","obraId":"canchas-padel","fecha":"2026-04-17","metodo":"TARJETA","folio":"FA00239023","subtotal":2656.28,"iva":425,"uuid":"9ACB72F3-F7BF-4D7F-9528-552C962B53B8","nota":"Ref. RA00253246 — instalación PPR","scanned":false,"attachedFile":null,"createdAt":"2026-04-17T13:31:50.000Z"},{"id":"cfdi-comex-cco155743","monto":2452,"descripcion":"Sellador vinílico 5×1 (19L) — 1 cubeta","proveedor":"Pinturas de San Juan (Comex)","rfcProveedor":"PSJ810623214","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-17","metodo":"TARJETA","folio":"CCO155743","subtotal":2113.79,"iva":338.21,"uuid":"3F7ACFC3-C6F4-4C32-84B0-1D31E4F6CEB4","nota":"Forma: $1,700 tarjeta + $752 efectivo","scanned":false,"attachedFile":null,"createdAt":"2026-04-17T13:50:27.000Z"},{"id":"cfdi-ventacero-fc00205115","monto":10969.1,"descripcion":"Redondo 5/8\" a 6.1m — 45 pzas (desc. 7.5%) · Entrega: Obra Universidad, Camino a Los Olvera 400-A","proveedor":"VentAcero SAPI de CV (Pueblito)","rfcProveedor":"VAC8110164V0","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-21","metodo":"TRANSFERENCIA","folio":"FC002/05115","subtotal":9456.12,"iva":1512.98,"uuid":"DAECCF61-2B1F-4AB0-9538-3D8F9D40C2C3","nota":"Entrega Obra Universidad Corregidora","scanned":false,"attachedFile":null,"createdAt":"2026-04-21T08:50:28.000Z"},{"id":"cfdi-tornilleros-fa232507","monto":728.76,"descripcion":"Varilla roscada galv. 5/8\"×1m (8pz) + rondana plana galv. 5/8\" (40pz) + tuerca hex. galv. NC 5/8-11 (40pz)","proveedor":"Tornilleros Unidos del Bajío SA de CV","rfcProveedor":"TUB891228EW1","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-22","metodo":"TARJETA","folio":"FA 0000232507","subtotal":628.24,"iva":100.52,"uuid":"D44A0693-E24A-49F2-8308-B786BD628851","nota":"Contado","scanned":false,"attachedFile":null,"createdAt":"2026-04-22T16:20:41.000Z"},{"id":"cfdi-tractopartes-c244624","monto":522,"descripcion":"Conector p/remolque hembra PHL 7 hilos + macho PHL 7 hilos","proveedor":"Tracto Partes y Busses de Qro","rfcProveedor":"TPB110131JD2","concepto":"HERRAMIENTA","obraId":"canchas-padel","fecha":"2026-04-16","metodo":"EFECTIVO","folio":"C 244624","subtotal":450,"iva":72,"uuid":"54B47E31-A87E-4AC6-AE01-8B4483088463","nota":"","scanned":false,"attachedFile":null,"createdAt":"2026-04-16T10:55:50.000Z"},{"id":"cfdi-impac-qrob9961","monto":601.65,"descripcion":"Primario asfáltico H base agua cubeta 19L","proveedor":"Ecosistemas y Recubrimientos de México (Impac)","rfcProveedor":"ERM100519GC2","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-21","metodo":"TARJETA","folio":"QROB9961","subtotal":518.66,"iva":82.99,"uuid":"60336EB3-CF3C-483C-A6FB-DFCA78B7834D","nota":"Tienda Impac Corregidora","scanned":false,"attachedFile":null,"createdAt":"2026-04-21T09:59:12.000Z"},{"id":"cfdi-impac-qrob9960","monto":5748.75,"descripcion":"Akriltek 35 FV Grav. Blanca 10m² — 7 cubetas","proveedor":"Ecosistemas y Recubrimientos de México (Impac)","rfcProveedor":"ERM100519GC2","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-21","metodo":"TARJETA","folio":"QROB9960","subtotal":4955.82,"iva":792.93,"uuid":"89C85140-CA22-4E0B-B457-E1BAE7EBA447","nota":"Tienda Impac Corregidora — impermeabilizante","scanned":false,"attachedFile":null,"createdAt":"2026-04-21T09:56:33.000Z"},{"id":"cfdi-cassa-2715201737","monto":622590,"descripcion":"Supervisión y Trabajos Obra Canchas Padel, Universidad","proveedor":"CASSA Construcciones del Bajío","rfcProveedor":"CCB1806268D7","concepto":"GASTOS ADMON","obraId":"canchas-padel","fecha":"2026-04-21","metodo":"TRANSFERENCIA","folio":"20260421151907-2715201737","subtotal":536715.52,"iva":85874.48,"uuid":"F0937374-0D64-5A12-B97D-3AB6CD04A61B","nota":"Supervisión externa CASSA","scanned":false,"attachedFile":null,"createdAt":"2026-04-21T15:22:28.000Z"},{"id":"cfdi-cementos-abcd-7395","monto":4710,"descripcion":"Cemento Portland Moctezuma 25kg — 40 bultos","proveedor":"Cementos y Aceros ABCD","rfcProveedor":"CAA2403112M6","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-21","metodo":"TARJETA","folio":"7395","subtotal":4060.34,"iva":649.66,"uuid":"76C99C04-D2BD-4921-8E7D-A1E9A76799F8","nota":"","scanned":false,"attachedFile":null,"createdAt":"2026-04-21T11:01:30.000Z"},{"id":"cfdi-cassa-2715301737","monto":100000,"descripcion":"Supervisión y Trabajos Obra Canchas Padel, Universidad","proveedor":"CASSA Construcciones del Bajío","rfcProveedor":"CCB1806268D7","concepto":"GASTOS ADMON","obraId":"canchas-padel","fecha":"2026-04-21","metodo":"TRANSFERENCIA","folio":"20260421151930-2715301737","subtotal":86206.9,"iva":13793.1,"uuid":"DE77ECDF-C370-503A-8594-3F35251754A0","nota":"Supervisión CASSA complemento","scanned":false,"attachedFile":null,"createdAt":"2026-04-21T15:22:49.000Z"},{"id":"cfdi-elektron-qcf385039","monto":792.39,"descripcion":"Poliflex naranja 3/4\" rollo c/guía 50m","proveedor":"Elektron del Bajío SA de CV","rfcProveedor":"EBA8202225C7","concepto":"ELECTRICO","obraId":"canchas-padel","fecha":"2026-04-22","metodo":"TARJETA","folio":"QCF 385039","subtotal":683.1,"iva":109.29,"uuid":"DF873FA1-7F42-40C3-A19D-6351AF828639","nota":"Suc. QRO Constituyentes","scanned":false,"attachedFile":null,"createdAt":"2026-04-22T10:12:17.000Z"},{"id":"cfdi-cementos-abcd-7396","monto":10995,"descripcion":"Yeso Unibásico 40kg (25 bultos) + Mortero Moctezuma 25kg (20 bultos) + Cemento Moctezuma 25kg (40 bultos)","proveedor":"Cementos y Aceros ABCD","rfcProveedor":"CAA2403112M6","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-21","metodo":"TARJETA","folio":"7396","subtotal":9478.44,"iva":1516.56,"uuid":"780642AF-BE0B-4B8A-99A1-9A21DB30399C","nota":"","scanned":false,"attachedFile":null,"createdAt":"2026-04-21T11:02:44.000Z"},{"id":"cfdi-cementos-abcd-7397","monto":9500,"descripcion":"Estuco Uniblock 40kg — 50 bultos","proveedor":"Cementos y Aceros ABCD","rfcProveedor":"CAA2403112M6","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-21","metodo":"TARJETA","folio":"7397","subtotal":8189.66,"iva":1310.34,"uuid":"6F6A4804-4988-4B9E-B62A-76FEBC30107A","nota":"","scanned":false,"attachedFile":null,"createdAt":"2026-04-21T11:03:22.000Z"},{"id":"cfdi-macdepot-qro18462","monto":12171.3,"descripcion":"Pija autotal #14×1 S/A ME (4.5 mil) + Arandela #14×1\" galv. acrílico (4.5 mil) + Sellador Lamiflex blanco 600ml (20pz)","proveedor":"Mac Depot del Bajío SA de CV (MultiXpress)","rfcProveedor":"DBA1802217NA","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-22","metodo":"TRANSFERENCIA","folio":"QRO 18462","subtotal":10492.5,"iva":1678.8,"uuid":"0B9D5B6E-F9D3-410E-829C-69EE595FDA8A","nota":"Pijas y arandelas para lámina + sellador","scanned":false,"attachedFile":null,"createdAt":"2026-04-22T10:59:50.000Z"},{"id":"cpf-joel-topografo-01","monto":4000,"descripcion":"Levantamiento topográfico","proveedor":"Ing. Joel","rfcProveedor":"","concepto":"GASTOS OBRA","obraId":"canchas-padel-final","fecha":"2025-12-08","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"1 día · $4,000","scanned":false,"attachedFile":null,"createdAt":"2025-12-08T10:00:00.000Z"},{"id":"cpf-elektron-376034","monto":2454.31,"descripcion":"Cable uso rudo + accesorios para extensión","proveedor":"Elektron del Bajío","rfcProveedor":"","concepto":"ELECTRICO","obraId":"canchas-padel-final","fecha":"2025-12-11","metodo":"EFECTIVO","folio":"376034","subtotal":null,"iva":null,"uuid":"","nota":"1 lote · Folio 376034","scanned":false,"attachedFile":null,"createdAt":"2025-12-11T10:00:00.000Z"},{"id":"cpf-homedepot-25882","monto":2099,"descripcion":"Esmeril y discos de corte","proveedor":"Home Depot México","rfcProveedor":"","concepto":"HERRAMIENTA","obraId":"canchas-padel-final","fecha":"2025-12-11","metodo":"EFECTIVO","folio":"25882","subtotal":null,"iva":null,"uuid":"","nota":"1 lote · Folio 25882","scanned":false,"attachedFile":null,"createdAt":"2025-12-11T10:00:00.000Z"},{"id":"cpf-omar-escombro-01","monto":7800,"descripcion":"Viajes de escombro","proveedor":"Omar Transportes","rfcProveedor":"","concepto":"CIMENTACION","obraId":"canchas-padel-final","fecha":"2025-12-11","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"6 viajes × $1,300","scanned":false,"attachedFile":null,"createdAt":"2025-12-11T10:00:00.000Z"},{"id":"cpf-omar-escombro-02","monto":11700,"descripcion":"Viajes de escombro","proveedor":"Omar Transportes","rfcProveedor":"","concepto":"CIMENTACION","obraId":"canchas-padel-final","fecha":"2025-12-12","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"9 viajes × $1,300","scanned":false,"attachedFile":null,"createdAt":"2025-12-12T10:00:00.000Z"},{"id":"cpf-omar-flete-01","monto":3000,"descripcion":"Flete para llevar retroexcavadora","proveedor":"Omar Transportes","rfcProveedor":"","concepto":"HERRAMIENTA","obraId":"canchas-padel-final","fecha":"2025-12-12","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"2 fletes × $1,500","scanned":false,"attachedFile":null,"createdAt":"2025-12-12T10:00:00.000Z"},{"id":"cpf-omar-retro-01","monto":13500,"descripcion":"Renta retroexcavadora","proveedor":"Omar Transportes","rfcProveedor":"","concepto":"HERRAMIENTA","obraId":"canchas-padel-final","fecha":"2025-12-12","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"3 días × $4,500","scanned":false,"attachedFile":null,"createdAt":"2025-12-12T10:00:00.000Z"},{"id":"cpf-adan-01","monto":2700,"descripcion":"Adán Bartolo — Oficial","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-12","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"3 días × $900","scanned":false,"attachedFile":null,"createdAt":"2025-12-12T10:00:00.000Z"},{"id":"cpf-ivan-01","monto":1800,"descripcion":"Iván Bartolo — Ayudante","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-12","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"3 días × $600","scanned":false,"attachedFile":null,"createdAt":"2025-12-12T10:00:00.000Z"},{"id":"cpf-diego-01","monto":1800,"descripcion":"Diego Bartolo — Ayudante","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-12","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"3 días × $600","scanned":false,"attachedFile":null,"createdAt":"2025-12-12T10:00:00.000Z"},{"id":"cpf-justino-01","monto":3200,"descripcion":"Justino Flores — Residente de Obra","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-13","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"4 días × $800","scanned":false,"attachedFile":null,"createdAt":"2025-12-13T10:00:00.000Z"},{"id":"cpf-joel-topografo-02","monto":2600,"descripcion":"Topógrafo — visita de trazo","proveedor":"Ing. Joel","rfcProveedor":"","concepto":"GASTOS OBRA","obraId":"canchas-padel-final","fecha":"2025-12-13","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"1 día · $2,600","scanned":false,"attachedFile":null,"createdAt":"2025-12-13T10:00:00.000Z"},{"id":"cpf-omar-minicarg-01","monto":16000,"descripcion":"Renta minicargador — Canchas 5-6","proveedor":"Omar Transportes","rfcProveedor":"","concepto":"HERRAMIENTA","obraId":"canchas-padel-final","fecha":"2025-12-15","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"4 días × $4,000","scanned":false,"attachedFile":null,"createdAt":"2025-12-15T10:00:00.000Z"},{"id":"cpf-omar-tepetate-01","monto":26000,"descripcion":"Viajes de tepetate 14m³ — Canchas 5-6","proveedor":"Omar Transportes","rfcProveedor":"","concepto":"CIMENTACION","obraId":"canchas-padel-final","fecha":"2025-12-15","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"10 viajes × $2,600","scanned":false,"attachedFile":null,"createdAt":"2025-12-15T10:00:00.000Z"},{"id":"cpf-omar-escombro-03","monto":2600,"descripcion":"Viajes de escombro","proveedor":"Omar Transportes","rfcProveedor":"","concepto":"CIMENTACION","obraId":"canchas-padel-final","fecha":"2025-12-16","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"2 viajes × $1,300","scanned":false,"attachedFile":null,"createdAt":"2025-12-16T10:00:00.000Z"},{"id":"cpf-omar-retro-02","monto":22500,"descripcion":"Renta retroexcavadora","proveedor":"Omar Transportes","rfcProveedor":"","concepto":"HERRAMIENTA","obraId":"canchas-padel-final","fecha":"2025-12-15","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"5 días × $4,500","scanned":false,"attachedFile":null,"createdAt":"2025-12-15T10:00:00.000Z"},{"id":"cpf-multitorn-68161","monto":360,"descripcion":"Discos de corte — demolición gradas","proveedor":"Multitornillos","rfcProveedor":"","concepto":"HERRAMIENTA","obraId":"canchas-padel-final","fecha":"2025-12-15","metodo":"EFECTIVO","folio":"68161","subtotal":null,"iva":null,"uuid":"","nota":"1 lote · Folio 68161","scanned":false,"attachedFile":null,"createdAt":"2025-12-15T10:00:00.000Z"},{"id":"cpf-dissan-421","monto":190,"descripcion":"Alambre y pinzas — demolición gradas","proveedor":"Ferretería Dissan","rfcProveedor":"","concepto":"MATERIALES","obraId":"canchas-padel-final","fecha":"2025-12-15","metodo":"EFECTIVO","folio":"421","subtotal":null,"iva":null,"uuid":"","nota":"1 lote · Folio 421","scanned":false,"attachedFile":null,"createdAt":"2025-12-15T10:00:00.000Z"},{"id":"cpf-torncorr-73947","monto":130.95,"descripcion":"Discos de corte — demolición gradas","proveedor":"Tornillos Corregidora","rfcProveedor":"","concepto":"HERRAMIENTA","obraId":"canchas-padel-final","fecha":"2025-12-15","metodo":"EFECTIVO","folio":"73947","subtotal":null,"iva":null,"uuid":"","nota":"1 lote · Folio 73947","scanned":false,"attachedFile":null,"createdAt":"2025-12-15T10:00:00.000Z"},{"id":"cpf-torncorr-55632","monto":250.17,"descripcion":"Discos de corte — demolición gradas","proveedor":"Tornillos Corregidora","rfcProveedor":"","concepto":"HERRAMIENTA","obraId":"canchas-padel-final","fecha":"2025-12-16","metodo":"EFECTIVO","folio":"55632","subtotal":null,"iva":null,"uuid":"","nota":"1 lote · Folio 55632","scanned":false,"attachedFile":null,"createdAt":"2025-12-16T10:00:00.000Z"},{"id":"cpf-homedepot-25390","monto":722,"descripcion":"Candados para bodega","proveedor":"Home Depot México","rfcProveedor":"","concepto":"GASTOS OBRA","obraId":"canchas-padel-final","fecha":"2025-12-18","metodo":"EFECTIVO","folio":"25390","subtotal":null,"iva":null,"uuid":"","nota":"1 lote · Folio 25390","scanned":false,"attachedFile":null,"createdAt":"2025-12-18T10:00:00.000Z"},{"id":"cpf-herrero-01","monto":2400,"descripcion":"Herrero — corte de gradas","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-19","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"3 días × $800","scanned":false,"attachedFile":null,"createdAt":"2025-12-19T10:00:00.000Z"},{"id":"cpf-adan-02","monto":4500,"descripcion":"Adán Bartolo — Oficial","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-19","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"5 días × $900","scanned":false,"attachedFile":null,"createdAt":"2025-12-19T10:00:00.000Z"},{"id":"cpf-santiago-01","monto":4500,"descripcion":"Santiago Bartolo — Oficial","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-19","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"5 días × $900","scanned":false,"attachedFile":null,"createdAt":"2025-12-19T10:00:00.000Z"},{"id":"cpf-ivan-02","monto":3000,"descripcion":"Iván Bartolo — Ayudante","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-19","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"5 días × $600","scanned":false,"attachedFile":null,"createdAt":"2025-12-19T10:00:00.000Z"},{"id":"cpf-diego-02","monto":3000,"descripcion":"Diego Bartolo — Ayudante","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-19","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"5 días × $600","scanned":false,"attachedFile":null,"createdAt":"2025-12-19T10:00:00.000Z"},{"id":"cpf-justino-02","monto":4000,"descripcion":"Justino Flores — Residente de Obra","proveedor":"Haus Laak Constructora","rfcProveedor":"","concepto":"MANO DE OBRA","obraId":"canchas-padel-final","fecha":"2025-12-19","metodo":"EFECTIVO","folio":"","subtotal":null,"iva":null,"uuid":"","nota":"5 días × $800","scanned":false,"attachedFile":null,"createdAt":"2025-12-19T10:00:00.000Z"},{"id":"mp8kn3ewhh8ni","monto":45956.59,"descripcion":"Fianza anticipo simple obra - prima, D.I.V y gastos","proveedor":"Sofimex, Institución de Garantías, S.A.","rfcProveedor":"ASG-950531-ID1","concepto":"GASTOS OBRA","obraId":"canchas-padel-final","fecha":"2025-12-10","metodo":"TRANSFERENCIA","folio":"AA 1621954","subtotal":39617.75,"iva":6338.84,"uuid":"31290434-6B8E-4C24-B4AB-A82AA3924EC7","nota":"Fianza expedida ante BANCO INVEX Fideicomiso 2183, monto afianzado $2,972,443.05","scanned":true,"attachedFile":null,"createdAt":"2026-05-16T16:39:27.752Z"},{"id":"mp8l9ev4sv8bw","monto":1903.21,"descripcion":"Cable desnudo cal 12 y poliflex naranja 3/4 rollo c/guia","proveedor":"ELEKTRON DEL BAJIO S.A. DE C.V.","rfcProveedor":"LSO1306189R5","concepto":"ELECTRICO","obraId":"canchas-padel-final","fecha":"2025-12-29","metodo":"PRESENTE","folio":"QCF 377168","subtotal":1640.7,"iva":262.51,"uuid":"639DA701-1461-4276-BF1E-6256F5F1E83D","nota":"Almacén QRO Constituyentes, vendedor Mostrador Queretaro","scanned":true,"attachedFile":null,"createdAt":"2026-05-16T16:56:49.024Z"},{"id":"factura-ams-qrm65670","monto":928,"descripcion":"Ángulo aluminio 3/16\" x 2½\" x 3.66 mts — 1 pz (5.8 kg)","proveedor":"Aluminio y Metales El Socorro","rfcProveedor":"AMS-070920-RH4","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-08","metodo":"TARJETA","folio":"QRM 65670","subtotal":800,"iva":128,"uuid":"52FCA21E-3D8E-4D3E-B83E-C29C77A01E37","nota":"Sucursal Querétaro","createdAt":"2026-04-08T12:50:57.000Z","scanned":false},{"id":"factura-homedepot-4kaagji58439","monto":1299,"descripcion":"Sika Curador E Cubeta 19L","proveedor":"Home Depot México (Suc. 1170 Corregidora)","rfcProveedor":"HDM001017AS1","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-10","metodo":"TARJETA","folio":"4KAAGJI58439","subtotal":1119.83,"iva":179.17,"uuid":"383911C6-8C19-400F-94BC-EB78BBE8AF5B","nota":"Corregidora, Qro.","createdAt":"2026-04-10T08:25:26.000Z","scanned":false},{"id":"factura-caa-7207","monto":17560,"descripcion":"80 Bultos Mortero y Cemento Moctezuma 25 kg (40 Mortero + 40 Cemento)","proveedor":"Cementos y Aceros ABCD","rfcProveedor":"CAA2403112M6","concepto":"MATERIALES","obraId":"canchas-padel","fecha":"2026-04-10","metodo":"TRANSFERENCIA","folio":"7207","subtotal":15137.92,"iva":2422.08,"uuid":"8F7ACDA4-EA0C-4747-BF74-A57D9B65BBA8","nota":"Santiago de Querétaro — Método PUE, Transferencia electrónica","createdAt":"2026-04-10T16:15:06.000Z","scanned":false},{"id":"mp8n7pgobz0mn","monto":2200,"descripcion":"1 viaje de arena 7 m3","proveedor":"OMAR","concepto":"MATERIALES","obraId":"canchas-padel-final","fecha":"2026-04-06","metodo":"EFECTIVO","nota":"Univercidad Corregidora, Los Olvera. Recibe: Javier Maldonado","folio":"","rfcProveedor":"","subtotal":null,"iva":null,"uuid":"","scanned":false,"attachedFile":null,"createdAt":"2026-05-16T17:51:28.680Z"},{"id":"mp8s97pik88xl","monto":10000,"descripcion":"Trabajos de obra y administrativos de canchas padel en UNIDEP semana 2","proveedor":"SOTREBIK ACTIVOS COMPANY","concepto":"OTRO","obraId":"canchas-padel-final","fecha":"2025-12-31","metodo":"TRANSFERENCIA","nota":"","folio":"A-1759","rfcProveedor":"SAC241015DG9","subtotal":8620.69,"iva":1379.31,"uuid":"C8F8881A-CE10-491A-AD4F-24717E05D10C","scanned":false,"attachedFile":null,"createdAt":"2026-05-16T20:12:37.062Z"}]};
 
