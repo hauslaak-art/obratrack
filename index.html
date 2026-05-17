@@ -243,6 +243,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .obra-info-key{font-size:11px;color:var(--muted)}
 .obra-info-val{font-size:12px;font-weight:700;text-align:right}
 .ingreso-badge{background:rgba(0,230,118,.15);color:var(--green);padding:2px 8px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:1px}
+.herr-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .15s}
+.herr-card:active{background:var(--surface2)}
+.herr-status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase}
+.status-disponible{background:rgba(0,230,118,.15);color:var(--green)}
+.status-en-uso{background:rgba(255,107,43,.15);color:var(--accent2)}
+.status-mantenimiento{background:rgba(255,193,7,.15);color:var(--amber)}
+.status-rentado{background:rgba(0,212,255,.12);color:var(--accent)}
+.cat-row{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s}
+.cat-row:active{background:var(--surface2);transform:scale(.98)}
+.cat-clave{font-family:var(--mono);font-size:10px;color:var(--accent);width:80px;flex-shrink:0;padding-top:2px}
+.cat-desc{flex:1;font-size:12px;font-weight:600;min-width:0;line-height:1.4;word-wrap:break-word;white-space:normal}
+.cat-um{font-size:10px;color:var(--muted);flex-shrink:0;width:36px;text-align:right;padding-top:2px}
+.cat-pu{font-family:var(--mono);font-size:12px;color:var(--accent2);flex-shrink:0;width:70px;text-align:right;padding-top:2px}
 .settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(42,61,82,.5)}
 .settings-row:last-child{border-bottom:none}
 .settings-key{font-size:12px;color:var(--muted);flex-shrink:0;min-width:120px}
@@ -490,13 +503,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   <div class="ins-tab-bar" id="apuTabBar">
     <div class="ins-tab active" onclick="setApuTab(this,'form')">➕ Nuevo APU</div>
     <div class="ins-tab" onclick="setApuTab(this,'saved')">💾 Guardados</div>
+    <div class="ins-tab" onclick="setApuTab(this,'catalogs')">📚 Catálogos</div>
   </div>
   <div class="scroll">
     <!-- NUEVO APU FORM -->
     <div id="apu-panel-form">
       <div style="padding:14px 16px 0;display:flex;flex-direction:column;gap:10px">
         <div class="form-group"><label class="form-label">Número de Concepto</label><input class="form-input" id="apu-num" placeholder="Ej: 01-01-001" autocomplete="off"></div>
-        <div class="form-group"><label class="form-label">Descripción del Concepto</label><input class="form-input" id="apu-desc" placeholder="Ej: Excavación en corte a cielo abierto" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">Descripción del Concepto</label><textarea class="form-input apu-desc-area" id="apu-desc" placeholder="Ej: Excavación en corte a cielo abierto. Incluye: corte, extracción, traspaleo horizontal..." autocomplete="off" rows="3" style="resize:vertical;min-height:64px;font-family:var(--font);line-height:1.45"></textarea></div>
         <div class="form-row">
           <div class="form-group"><label class="form-label">Unidad</label>
             <select class="form-select" id="apu-unidad">
@@ -511,8 +525,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
       <!-- INSUMOS TABLE -->
       <div class="sec-header"><span class="sec-title">Insumos</span><span class="sec-action" onclick="addApuRow()">＋ Agregar</span></div>
       <div id="apu-rows" style="padding:0 16px;display:flex;flex-direction:column;gap:6px"></div>
-      <!-- INSUMOS RAPIDOS -->
-      <div style="padding:8px 16px"><div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Insumos base HL 2026</div>
+      <!-- CATALOG + QUICK BUTTONS -->
+      <div style="padding:8px 16px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button onclick="openApuCatalog('concepto')" style="padding:10px;border-radius:10px;border:1.5px solid rgba(0,212,255,.3);background:rgba(0,212,255,.06);color:var(--accent);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer">📋 Cargar desde catálogo</button>
+          <button onclick="openApuCatalog('insumo')" style="padding:10px;border-radius:10px;border:1.5px solid rgba(0,230,118,.3);background:rgba(0,230,118,.06);color:var(--green);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer">➕ Insumo del catálogo</button>
+        </div>
+        <div style="font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase">Insumos base HL 2026 (acceso rápido)</div>
         <div id="apu-quick-btns" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       </div>
       <!-- CARGOS -->
@@ -536,6 +555,84 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     </div>
     <!-- SAVED APUs -->
     <div id="apu-panel-saved" style="display:none;padding:14px 16px;display:none;flex-direction:column;gap:8px"></div>
+    <!-- CATALOGS PANEL -->
+    <div id="apu-panel-catalogs" style="display:none;padding:14px 16px;flex-direction:column;gap:10px"></div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- MODAL: NUEVO/EDITAR CATÁLOGO -->
+<div class="modal-overlay" id="catalogModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-height:88dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="catalog-modal-title">Nuevo <span>Catálogo</span></div>
+    <div class="form-grid">
+      <input type="hidden" id="catalog-edit-id">
+      <div class="form-group"><label class="form-label">Nombre del catálogo</label><input class="form-input" id="catalog-name" placeholder="Ej: Urbanización Municipal Querétaro 2026" autocomplete="off"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Clave / Folio</label><input class="form-input" id="catalog-clave" placeholder="Ej: HL-URB-001" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">Tipo</label>
+          <select class="form-select" id="catalog-tipo">
+            <option value="PUBLICO">Obra Pública</option>
+            <option value="PRIVADO" selected>Obra Privada (HL)</option>
+            <option value="MIXTO">Mixto</option>
+            <option value="REFERENCIA">Referencia</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Descripción / Notas</label>
+        <textarea class="form-input" id="catalog-desc" placeholder="Notas sobre el catálogo, vigencia, fuente, etc." rows="2" style="resize:vertical;min-height:54px;font-family:var(--font);line-height:1.45"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Vigencia desde</label><input class="form-input" id="catalog-vigencia" type="date"></div>
+        <div class="form-group"><label class="form-label">Moneda</label>
+          <select class="form-select" id="catalog-moneda">
+            <option value="MXN" selected>MXN</option><option value="USD">USD</option>
+          </select>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="saveCatalog()">GUARDAR CATÁLOGO</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETALLE DEL CATÁLOGO (APUs incluidos) -->
+<div class="modal-overlay" id="catalogDetailModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-height:90dvh;overflow-y:auto" id="catalog-detail-content"></div>
+</div>
+
+<!-- MODAL: AGREGAR APUs AL CATÁLOGO -->
+<div class="modal-overlay" id="catalogAddApusModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-height:88dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Agregar <span>APUs al catálogo</span></div>
+    <div class="form-group" style="margin-bottom:10px"><label class="form-label">Buscar APU guardado</label>
+      <input class="form-input" id="cat-add-search" placeholder="Buscar por descripción o clave..." oninput="renderCatalogAddApus()" autocomplete="off">
+    </div>
+    <div id="cat-add-apus-list" style="display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;margin-bottom:14px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="submit-btn" onclick="confirmAddApusToCatalog()" style="flex:1">AGREGAR SELECCIONADOS</button>
+      <button onclick="document.getElementById('catalogAddApusModal').classList.remove('open')" style="padding:14px 18px;border-radius:14px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:var(--font);cursor:pointer">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- HERRAMIENTA / EQUIPO -->
+<div class="screen" id="screen-herr">
+  <div class="topbar">
+    <div><div class="topbar-brand">Equipo</div><div class="topbar-sub" id="herr-subtitle">herramienta y maquinaria</div></div>
+    <div class="topbar-right"><div class="icon-btn" onclick="openAddHerr()">＋</div></div>
+  </div>
+  <div class="ins-tab-bar" id="herrTabBar">
+    <div class="ins-tab active" onclick="setHerrTab(this,'todos')">📋 Todos</div>
+    <div class="ins-tab" onclick="setHerrTab(this,'disponible')">✅ Disponible</div>
+    <div class="ins-tab" onclick="setHerrTab(this,'en-uso')">🔨 En uso</div>
+    <div class="ins-tab" onclick="setHerrTab(this,'mantenimiento')">🔧 Mant.</div>
+  </div>
+  <div class="scroll">
+    <div id="herr-kpis" style="padding:14px 16px 0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"></div>
+    <div class="sec-header"><span class="sec-title">Inventario</span></div>
+    <div id="herr-list" style="padding:0 16px;display:flex;flex-direction:column;gap:8px"></div>
     <div style="height:20px"></div>
   </div>
 </div>
@@ -548,6 +645,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   <div class="nav-item" id="nav-presup" onclick="switchScreen('screen-presup');setNav('nav-presup')"><span class="nav-icon">📐</span><span class="nav-label">Presup.</span></div>
   <div class="nav-item" id="nav-avance" onclick="switchScreen('screen-avance');setNav('nav-avance')"><span class="nav-icon">📸</span><span class="nav-label">Avance</span></div>
   <div class="nav-item" id="nav-apu" onclick="switchScreen('screen-apu');setNav('nav-apu')"><span class="nav-icon">🧮</span><span class="nav-label">APU</span></div>
+  <div class="nav-item" id="nav-herr" onclick="switchScreen('screen-herr');setNav('nav-herr')"><span class="nav-icon">🔧</span><span class="nav-label">Equipo</span></div>
   <div class="nav-item" id="nav-stats" onclick="switchScreen('screen-stats');setNav('nav-stats')"><span class="nav-icon">📊</span><span class="nav-label">Análisis</span></div>
   <div class="nav-item" id="nav-export" onclick="switchScreen('screen-export');setNav('nav-export')"><span class="nav-icon">📤</span><span class="nav-label">Exportar</span></div>
 </div>
@@ -685,6 +783,84 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <!-- DETAIL MODAL -->
 <div class="modal-overlay" id="detailModal" onclick="closeOnBg(event,'detailModal')">
   <div class="modal" style="max-height:85dvh;overflow-y:auto" id="detailContent"></div>
+</div>
+
+<!-- ADD HERRAMIENTA MODAL -->
+<div class="modal-overlay" id="herrModal" onclick="closeOnBg(event,'herrModal')">
+  <div class="modal" style="max-height:90dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="herr-modal-title">Nueva <span>Herramienta</span></div>
+    <input type="hidden" id="herr-edit-id">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nombre / Descripción</label><input class="form-input" id="herr-nombre" placeholder="Ej: Retroexcavadora JD 310L" autocomplete="off"></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Tipo</label>
+          <select class="form-select" id="herr-tipo">
+            <option value="Maquinaria pesada">Maquinaria pesada</option>
+            <option value="Herramienta eléctrica">Herramienta eléctrica</option>
+            <option value="Herramienta manual">Herramienta manual</option>
+            <option value="Equipo de medición">Equipo de medición</option>
+            <option value="Vehículo">Vehículo</option>
+            <option value="Andamio / Cimbra">Andamio / Cimbra</option>
+            <option value="Equipo de seguridad">Equipo de seguridad</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Propiedad</label>
+          <select class="form-select" id="herr-propiedad">
+            <option value="Propio">Propio</option>
+            <option value="Rentado">Rentado</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Marca / Modelo</label><input class="form-input" id="herr-marca" placeholder="Ej: John Deere 310L" autocomplete="off"></div>
+        <div class="form-group"><label class="form-label">No. Serie / Placas</label><input class="form-input" id="herr-serie" placeholder="Ej: SY4692D" autocomplete="off"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Estado Actual</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button class="method-btn active-tr" id="btn-herr-disp" onclick="setHerrStatus('disponible')">✅ Disponible</button>
+          <button class="method-btn" id="btn-herr-uso" onclick="setHerrStatus('en-uso')">🔨 En uso</button>
+          <button class="method-btn" id="btn-herr-mant" onclick="setHerrStatus('mantenimiento')">🔧 Mantenimiento</button>
+          <button class="method-btn" id="btn-herr-rent" onclick="setHerrStatus('rentado')">📤 Rentado a 3°</button>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Obra Asignada</label>
+        <select class="form-select" id="herr-obra">
+          <option value="">Sin asignar</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Costo por día/hr (MXN)</label><input class="form-input" id="herr-costo" type="number" placeholder="0.00" inputmode="decimal"></div>
+        <div class="form-group"><label class="form-label">Unidad costo</label>
+          <select class="form-select" id="herr-costo-unidad">
+            <option value="día">Por día</option>
+            <option value="hora">Por hora</option>
+            <option value="semana">Por semana</option>
+            <option value="global">Global / Renta</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Proveedor / Rentadora</label><input class="form-input" id="herr-proveedor" placeholder="Ej: Omar Transportes" list="prov-dl" autocomplete="off"></div>
+      <div class="form-group"><label class="form-label">Próximo mantenimiento</label><input class="form-input" id="herr-mant-fecha" type="date"></div>
+      <div class="form-group"><label class="form-label">Notas</label><input class="form-input" id="herr-notas" placeholder="Observaciones, condiciones, ubicación"></div>
+      <button class="submit-btn" onclick="saveHerr()">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- APU CATALOG MODAL -->
+<div class="modal-overlay" id="apuCatModal" onclick="closeOnBg(event,'apuCatModal')">
+  <div class="modal" style="max-height:90dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Catálogo de <span>Conceptos</span></div>
+    <div class="ins-search" style="padding:0 0 10px">
+      <span class="si">🔍</span>
+      <input id="cat-search" placeholder="Buscar concepto, clave, unidad…" oninput="renderCatalogModal()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:13px;font-family:var(--font);padding:11px 16px 11px 40px;width:100%;outline:none">
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="cat-filter-chips"></div>
+    <div id="cat-modal-list" style="display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto"></div>
+  </div>
 </div>
 
 <!-- PRESUPUESTO EDIT MODAL -->
@@ -986,6 +1162,7 @@ function switchScreen(id){
   if(id==='screen-presup')renderPresupuesto();
   if(id==='screen-avance')renderAvance();
   if(id==='screen-apu')initApu();
+  if(id==='screen-herr')renderHerramienta();
   if(id==='screen-export')updateExportLabels();
 }
 function setNav(id){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));document.getElementById(id).classList.add('active');}
@@ -2619,7 +2796,9 @@ function setApuTab(el, tab){
   el.classList.add('active');
   document.getElementById('apu-panel-form').style.display = tab==='form'?'block':'none';
   document.getElementById('apu-panel-saved').style.display = tab==='saved'?'flex':'none';
+  document.getElementById('apu-panel-catalogs').style.display = tab==='catalogs'?'flex':'none';
   if(tab==='saved') renderSavedApus();
+  if(tab==='catalogs') renderCatalogsPanel();
 }
 
 function renderApuQuickBtns(){
@@ -2787,6 +2966,939 @@ function exportApuToExcel(apu){
   XLSX.utils.book_append_sheet(wb,ws,'APU');
   XLSX.writeFile(wb,'APU_'+(apu.desc||'concepto').replace(/\s+/g,'_')+'_'+today()+'.xlsx');
   showToast('✅ Excel APU descargado');
+}
+
+
+// ── CATÁLOGOS DE CONCEPTOS (presupuestos base reutilizables) ─────
+// Un catálogo agrupa múltiples APUs guardados bajo un contenedor nombrado.
+// Vive en state.catalogs (global, no por obra) para que sirva como biblioteca.
+let currentCatalogId = null;
+let _catalogAddSelection = new Set();
+
+function getCatalogs(){
+  if(!state.catalogs) state.catalogs=[];
+  return state.catalogs;
+}
+
+function getAllSavedApus(){
+  // Recolecta APUs de TODAS las obras (los catálogos son globales)
+  const out=[];
+  (state.projects||[]).forEach(p=>{
+    (p.apus||[]).forEach(a=>{ out.push({...a, _projectId:p.id, _projectName:p.name}); });
+  });
+  return out;
+}
+
+function renderCatalogsPanel(){
+  const panel = document.getElementById('apu-panel-catalogs');
+  panel.style.cssText='display:flex;flex-direction:column;gap:10px;padding:14px 16px';
+  const cats = getCatalogs();
+
+  // Header + botón crear
+  let html = `
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:4px">
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text)">Mis Catálogos</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Conjuntos de APUs reutilizables para licitaciones y presupuestos base</div>
+      </div>
+      <button onclick="openNewCatalog()" style="padding:10px 14px;border-radius:10px;border:none;background:var(--accent2);color:#fff;font-weight:700;font-family:var(--font);font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">＋ Nuevo</button>
+    </div>`;
+
+  if(!cats.length){
+    html += `<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">Aún no tienes catálogos.<br>Crea uno para empezar a agrupar APUs.</div></div>`;
+    panel.innerHTML=html;
+    return;
+  }
+
+  const tipoColor = {PUBLICO:'var(--accent)', PRIVADO:'var(--accent2)', MIXTO:'var(--amber)', REFERENCIA:'var(--muted)'};
+  const tipoLabel = {PUBLICO:'PÚBLICO', PRIVADO:'PRIVADO HL', MIXTO:'MIXTO', REFERENCIA:'REFERENCIA'};
+
+  html += cats.map(cat=>{
+    const apusCount = (cat.apuIds||[]).length;
+    const allApus = getAllSavedApus();
+    const apusInCat = (cat.apuIds||[]).map(id=>allApus.find(a=>a.id===id)).filter(Boolean);
+    const totalCD = apusInCat.reduce((s,a)=>{
+      return s + (a.rows||[]).reduce((ss,r)=>ss+(r.cant*r.pu),0);
+    }, 0);
+    const tColor = tipoColor[cat.tipo]||'var(--muted)';
+    return `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer" onclick="openCatalogDetail('${cat.id}')">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+              <span style="font-size:9px;font-weight:700;letter-spacing:1.5px;padding:2px 8px;border-radius:10px;background:${tColor};color:#fff;text-transform:uppercase">${tipoLabel[cat.tipo]||cat.tipo}</span>
+              ${cat.clave?`<span style="font-family:var(--mono);font-size:10px;color:var(--accent)">${cat.clave}</span>`:''}
+            </div>
+            <div style="font-size:14px;font-weight:700;line-height:1.3">${cat.name}</div>
+            ${cat.desc?`<div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4">${cat.desc}</div>`:''}
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;font-size:11px;color:var(--muted);align-items:center;padding-top:8px;border-top:1px solid var(--border)">
+          <span>📋 <strong style="color:var(--text)">${apusCount}</strong> APUs</span>
+          <span>💰 <strong style="color:var(--accent2);font-family:var(--mono)">${fmt(totalCD)}</strong> CD total</span>
+          ${cat.vigencia?`<span style="margin-left:auto">📅 ${cat.vigencia}</span>`:''}
+        </div>
+      </div>`;
+  }).join('');
+  panel.innerHTML = html;
+}
+
+function openNewCatalog(){
+  document.getElementById('catalog-edit-id').value='';
+  document.getElementById('catalog-name').value='';
+  document.getElementById('catalog-clave').value='';
+  document.getElementById('catalog-desc').value='';
+  document.getElementById('catalog-tipo').value='PRIVADO';
+  document.getElementById('catalog-moneda').value='MXN';
+  document.getElementById('catalog-vigencia').value=today();
+  document.getElementById('catalog-modal-title').innerHTML='Nuevo <span>Catálogo</span>';
+  document.getElementById('catalogModal').classList.add('open');
+  setTimeout(()=>document.getElementById('catalog-name').focus(),250);
+}
+
+function openEditCatalog(catId){
+  const cat = getCatalogs().find(c=>c.id===catId); if(!cat) return;
+  document.getElementById('catalog-edit-id').value=cat.id;
+  document.getElementById('catalog-name').value=cat.name||'';
+  document.getElementById('catalog-clave').value=cat.clave||'';
+  document.getElementById('catalog-desc').value=cat.desc||'';
+  document.getElementById('catalog-tipo').value=cat.tipo||'PRIVADO';
+  document.getElementById('catalog-moneda').value=cat.moneda||'MXN';
+  document.getElementById('catalog-vigencia').value=cat.vigencia||today();
+  document.getElementById('catalog-modal-title').innerHTML='Editar <span>Catálogo</span>';
+  document.getElementById('catalogModal').classList.add('open');
+}
+
+async function saveCatalog(){
+  const name = document.getElementById('catalog-name').value.trim();
+  if(!name){shakeInput('catalog-name');return;}
+  if(!state.catalogs) state.catalogs=[];
+  const editId = document.getElementById('catalog-edit-id').value;
+  const data = {
+    name,
+    clave: document.getElementById('catalog-clave').value.trim(),
+    desc: document.getElementById('catalog-desc').value.trim(),
+    tipo: document.getElementById('catalog-tipo').value,
+    moneda: document.getElementById('catalog-moneda').value,
+    vigencia: document.getElementById('catalog-vigencia').value,
+  };
+  if(editId){
+    const idx = state.catalogs.findIndex(c=>c.id===editId);
+    if(idx>=0) state.catalogs[idx] = {...state.catalogs[idx], ...data, updatedAt:new Date().toISOString()};
+    showToast('✅ Catálogo actualizado');
+  } else {
+    state.catalogs.push({id:'cat-'+uid(), ...data, apuIds:[], createdAt:new Date().toISOString()});
+    showToast('✅ Catálogo creado: '+name);
+  }
+  await saveState();
+  document.getElementById('catalogModal').classList.remove('open');
+  renderCatalogsPanel();
+}
+
+function openCatalogDetail(catId){
+  currentCatalogId = catId;
+  const cat = getCatalogs().find(c=>c.id===catId); if(!cat) return;
+  const allApus = getAllSavedApus();
+  const apusInCat = (cat.apuIds||[]).map(id=>allApus.find(a=>a.id===id)).filter(Boolean);
+  const totalCD = apusInCat.reduce((s,a)=>s+(a.rows||[]).reduce((ss,r)=>ss+(r.cant*r.pu),0),0);
+
+  const tipoLabel = {PUBLICO:'PÚBLICO', PRIVADO:'PRIVADO HL', MIXTO:'MIXTO', REFERENCIA:'REFERENCIA'}[cat.tipo]||cat.tipo;
+
+  let apuRowsHtml = '';
+  if(apusInCat.length){
+    apuRowsHtml = apusInCat.map(a=>{
+      const cd = (a.rows||[]).reduce((s,r)=>s+(r.cant*r.pu),0);
+      const ind = cd*HL_CARGOS.indirectos, util = cd*HL_CARGOS.utilidad;
+      const fin = (cd+ind+util)*HL_CARGOS.financiamiento;
+      const vig = (cd+ind+util+fin)*HL_CARGOS.vigilancia;
+      const pu = (cd+ind+util+fin+vig)/((a.rend||1));
+      return `
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <div style="flex:1;min-width:0">
+              ${a.num?`<div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:2px">${a.num}</div>`:''}
+              <div style="font-size:12px;font-weight:600;line-height:1.35">${a.desc}</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px">${a.unidad} · ${(a.rows||[]).length} insumos · ${a._projectName||''}</div>
+            </div>
+            <button onclick="removeApuFromCatalog('${a.id}')" style="width:24px;height:24px;border-radius:6px;border:none;background:rgba(255,68,68,.12);color:var(--red);cursor:pointer;font-size:14px;flex-shrink:0">×</button>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding-top:6px;border-top:1px solid var(--border)">
+            <span>CD: <strong style="color:var(--text);font-family:var(--mono)">${fmtFull(cd)}</strong></span>
+            <span>PU: <strong style="color:var(--accent2);font-family:var(--mono)">${fmtFull(pu)}</strong> /${a.unidad||''}</span>
+          </div>
+        </div>`;
+    }).join('');
+  } else {
+    apuRowsHtml = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Catálogo vacío.<br>Agrega APUs desde la pestaña ＋ Agregar APUs.</div></div>';
+  }
+
+  const tColor = {PUBLICO:'var(--accent)', PRIVADO:'var(--accent2)', MIXTO:'var(--amber)', REFERENCIA:'var(--muted)'}[cat.tipo]||'var(--muted)';
+
+  document.getElementById('catalog-detail-content').innerHTML = `
+    <div class="modal-handle"></div>
+    <div style="text-align:center;margin-bottom:14px">
+      <span style="font-size:9px;font-weight:700;letter-spacing:1.5px;padding:3px 10px;border-radius:10px;background:${tColor};color:#fff;text-transform:uppercase">${tipoLabel}</span>
+      ${cat.clave?`<div style="font-family:var(--mono);font-size:11px;color:var(--accent);margin-top:6px">${cat.clave}</div>`:''}
+      <div style="font-size:18px;font-weight:800;margin-top:4px;letter-spacing:-.3px">${cat.name}</div>
+      ${cat.desc?`<div style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4">${cat.desc}</div>`:''}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase">APUs</div>
+        <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);margin-top:2px">${apusInCat.length}</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase">CD Acumulado</div>
+        <div style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent2);margin-top:4px">${fmt(totalCD)}</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <button onclick="openAddApusToCatalog()" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--green);background:rgba(0,230,118,.1);color:var(--green);font-weight:700;font-family:var(--font);font-size:12px;cursor:pointer">＋ Agregar APUs</button>
+      <button onclick="exportCatalogExcel('${cat.id}')" style="flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--accent);background:rgba(0,212,255,.08);color:var(--accent);font-weight:700;font-family:var(--font);font-size:12px;cursor:pointer">📊 Excel</button>
+      <button onclick="duplicateCatalog('${cat.id}')" style="padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-weight:700;font-family:var(--font);font-size:12px;cursor:pointer">📑</button>
+      <button onclick="openEditCatalog('${cat.id}');document.getElementById('catalogDetailModal').classList.remove('open')" style="padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-weight:700;font-family:var(--font);font-size:12px;cursor:pointer">✏️</button>
+    </div>
+
+    <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Conceptos incluidos</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">${apuRowsHtml}</div>
+
+    <button onclick="deleteCatalog('${cat.id}')" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid rgba(255,68,68,.3);background:rgba(255,68,68,.08);color:var(--red);font-weight:700;font-family:var(--font);font-size:13px;cursor:pointer">🗑 Eliminar catálogo</button>
+  `;
+  document.getElementById('catalogDetailModal').classList.add('open');
+}
+
+function openAddApusToCatalog(){
+  _catalogAddSelection.clear();
+  document.getElementById('cat-add-search').value='';
+  renderCatalogAddApus();
+  document.getElementById('catalogAddApusModal').classList.add('open');
+}
+
+function renderCatalogAddApus(){
+  const q = (document.getElementById('cat-add-search').value||'').toLowerCase();
+  const cat = getCatalogs().find(c=>c.id===currentCatalogId);
+  const yaEnCat = new Set((cat?.apuIds)||[]);
+  let apus = getAllSavedApus().filter(a=>!yaEnCat.has(a.id));
+  if(q){
+    apus = apus.filter(a=>
+      (a.desc||'').toLowerCase().includes(q) ||
+      (a.num||'').toLowerCase().includes(q) ||
+      (a._projectName||'').toLowerCase().includes(q)
+    );
+  }
+  const list = document.getElementById('cat-add-apus-list');
+  if(!apus.length){
+    list.innerHTML = '<div class="empty" style="padding:30px 10px"><div class="empty-icon">🔍</div><div class="empty-text">'+(q?'Sin resultados':'No hay APUs guardados disponibles')+'</div></div>';
+    return;
+  }
+  list.innerHTML = apus.map(a=>{
+    const sel = _catalogAddSelection.has(a.id);
+    return `
+      <div onclick="toggleCatAddSel('${a.id}')" style="background:${sel?'rgba(0,230,118,.12)':'var(--surface2)'};border:1.5px solid ${sel?'var(--green)':'var(--border)'};border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;align-items:center;gap:10px">
+        <div style="width:20px;height:20px;border-radius:6px;border:1.5px solid ${sel?'var(--green)':'var(--border)'};background:${sel?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;font-size:13px;font-weight:700">${sel?'✓':''}</div>
+        <div style="flex:1;min-width:0">
+          ${a.num?`<div style="font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:2px">${a.num}</div>`:''}
+          <div style="font-size:12px;font-weight:600;line-height:1.35">${a.desc}</div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${a.unidad} · ${a._projectName||''}</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleCatAddSel(apuId){
+  if(_catalogAddSelection.has(apuId)) _catalogAddSelection.delete(apuId);
+  else _catalogAddSelection.add(apuId);
+  renderCatalogAddApus();
+}
+
+async function confirmAddApusToCatalog(){
+  if(!_catalogAddSelection.size){
+    showToast('Selecciona al menos un APU', true);
+    return;
+  }
+  const cat = getCatalogs().find(c=>c.id===currentCatalogId); if(!cat) return;
+  if(!cat.apuIds) cat.apuIds=[];
+  _catalogAddSelection.forEach(id=>{ if(!cat.apuIds.includes(id)) cat.apuIds.push(id); });
+  cat.updatedAt = new Date().toISOString();
+  await saveState();
+  const n = _catalogAddSelection.size;
+  _catalogAddSelection.clear();
+  document.getElementById('catalogAddApusModal').classList.remove('open');
+  openCatalogDetail(currentCatalogId);
+  showToast(`✅ ${n} APU${n>1?'s':''} agregado${n>1?'s':''}`);
+}
+
+async function removeApuFromCatalog(apuId){
+  const cat = getCatalogs().find(c=>c.id===currentCatalogId); if(!cat) return;
+  if(!confirm('¿Quitar este APU del catálogo? (El APU original se conserva en su obra)')) return;
+  cat.apuIds = (cat.apuIds||[]).filter(id=>id!==apuId);
+  cat.updatedAt = new Date().toISOString();
+  await saveState();
+  openCatalogDetail(currentCatalogId);
+  showToast('APU quitado del catálogo');
+}
+
+async function deleteCatalog(catId){
+  const cat = getCatalogs().find(c=>c.id===catId); if(!cat) return;
+  if(!confirm(`¿Eliminar el catálogo "${cat.name}"?\n\nLos APUs individuales se conservan en sus obras, solo se elimina la agrupación.`)) return;
+  state.catalogs = state.catalogs.filter(c=>c.id!==catId);
+  await saveState();
+  document.getElementById('catalogDetailModal').classList.remove('open');
+  renderCatalogsPanel();
+  showToast('🗑 Catálogo eliminado');
+}
+
+async function duplicateCatalog(catId){
+  const cat = getCatalogs().find(c=>c.id===catId); if(!cat) return;
+  if(!state.catalogs) state.catalogs=[];
+  state.catalogs.push({
+    ...cat,
+    id: 'cat-'+uid(),
+    name: cat.name+' (copia)',
+    apuIds: [...(cat.apuIds||[])],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+  await saveState();
+  showToast('✅ Catálogo duplicado');
+  document.getElementById('catalogDetailModal').classList.remove('open');
+  renderCatalogsPanel();
+}
+
+function exportCatalogExcel(catId){
+  const cat = getCatalogs().find(c=>c.id===catId); if(!cat) return;
+  const allApus = getAllSavedApus();
+  const apusInCat = (cat.apuIds||[]).map(id=>allApus.find(a=>a.id===id)).filter(Boolean);
+
+  const wb = XLSX.utils.book_new();
+
+  // HOJA 1: Resumen de conceptos
+  const tipoLabel = {PUBLICO:'PÚBLICO', PRIVADO:'PRIVADO HL', MIXTO:'MIXTO', REFERENCIA:'REFERENCIA'}[cat.tipo]||cat.tipo;
+  const resumenRows = [
+    ['CATÁLOGO DE CONCEPTOS — HAUS LAAK CONSTRUCTORA','','','','',''],
+    [cat.name,'','','','',''],
+    ['','','','','',''],
+    ['Clave:', cat.clave||'','Tipo:', tipoLabel,'',''],
+    ['Vigencia:', cat.vigencia||'','Moneda:', cat.moneda||'MXN','',''],
+    ['Descripción:', cat.desc||'','','','',''],
+    ['','','','','',''],
+    ['#','CLAVE','CONCEPTO','UM','CD','PU FINAL'],
+  ];
+  let totalCD = 0, totalPU = 0;
+  apusInCat.forEach((a,i)=>{
+    const cd = (a.rows||[]).reduce((s,r)=>s+(r.cant*r.pu),0);
+    const ind = cd*HL_CARGOS.indirectos, util = cd*HL_CARGOS.utilidad;
+    const fin = (cd+ind+util)*HL_CARGOS.financiamiento;
+    const vig = (cd+ind+util+fin)*HL_CARGOS.vigilancia;
+    const pu = (cd+ind+util+fin+vig)/((a.rend||1));
+    totalCD += cd; totalPU += pu;
+    resumenRows.push([i+1, a.num||'', a.desc, a.unidad||'', cd, pu]);
+  });
+  resumenRows.push(['','','','','','']);
+  resumenRows.push(['','','TOTAL CD acumulado','', totalCD, '']);
+  resumenRows.push(['','','Suma de PUs','', '', totalPU]);
+  const ws1 = XLSX.utils.aoa_to_sheet(resumenRows);
+  ws1['!cols'] = [{wch:4},{wch:14},{wch:60},{wch:8},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+
+  // HOJA 2..N: un APU por hoja
+  apusInCat.forEach((a, idx)=>{
+    const rend = a.rend||1;
+    const byTipo = {MAT:0,MO:0,EQ:0,AUX:0};
+    (a.rows||[]).forEach(r=>{ byTipo[r.tipo]=(byTipo[r.tipo]||0)+(r.cant*r.pu); });
+    const CD = Object.values(byTipo).reduce((s,v)=>s+v,0);
+    const ind = CD*HL_CARGOS.indirectos, util = CD*HL_CARGOS.utilidad;
+    const fin = (CD+ind+util)*HL_CARGOS.financiamiento;
+    const vig = (CD+ind+util+fin)*HL_CARGOS.vigilancia;
+    const PU = (CD+ind+util+fin+vig)/rend;
+    const rows = [
+      ['ANÁLISIS DE PRECIO UNITARIO — HAUS LAAK CONSTRUCTORA','','','','',''],
+      [cat.name+' · '+(cat.clave||''),'','','','',''],
+      ['','','','','',''],
+      ['Concepto:', a.num||'','','','',''],
+      ['Descripción:', a.desc||'','','','',''],
+      ['Unidad:', a.unidad||'','Rendimiento:', rend,'',''],
+      ['','','','','',''],
+      ['TIPO','DESCRIPCIÓN','UNIDAD','CANTIDAD','P.UNIT.','IMPORTE'],
+      ...((a.rows||[]).map(r=>[r.tipo, r.desc, r.unidad, r.cant, r.pu, r.cant*r.pu])),
+      ['','','','','',''],
+      ['','','','','COSTO DIRECTO', CD],
+      ['','','','','Indirectos 10%', ind],
+      ['','','','','Utilidad 20%', util],
+      ['','','','','Financiamiento 0.5%', fin],
+      ['','','','','Vigilancia 2.5%', vig],
+      ['','','','','',''],
+      ['','','','','PRECIO UNITARIO', PU],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:8},{wch:50},{wch:10},{wch:12},{wch:12},{wch:14}];
+    const sheetName = ('APU '+(idx+1)+' '+(a.num||a.desc).substring(0,20)).replace(/[\\/?*:[\]]/g,'').substring(0,31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  const fileName = 'Catalogo_' + (cat.clave||cat.name).replace(/\s+/g,'_').replace(/[^\w\-]/g,'') + '_' + today() + '.xlsx';
+  XLSX.writeFile(wb, fileName);
+  showToast('✅ Catálogo exportado a Excel');
+}
+
+
+let herrStatus = 'disponible';
+let herrTab = 'todos';
+
+function setHerrTab(el, tab){
+  herrTab=tab;
+  document.querySelectorAll('#herrTabBar .ins-tab').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  renderHerramienta();
+}
+
+function openAddHerr(id){
+  const eq = id ? (state.equipo||[]).find(e=>e.id===id) : null;
+  document.getElementById('herr-modal-title').innerHTML = eq?'Editar <span>Equipo</span>':'Nueva <span>Herramienta</span>';
+  document.getElementById('herr-edit-id').value = id||'';
+  document.getElementById('herr-nombre').value = eq?.nombre||'';
+  document.getElementById('herr-tipo').value = eq?.tipo||'Herramienta eléctrica';
+  document.getElementById('herr-propiedad').value = eq?.propiedad||'Propio';
+  document.getElementById('herr-marca').value = eq?.marca||'';
+  document.getElementById('herr-serie').value = eq?.serie||'';
+  document.getElementById('herr-costo').value = eq?.costo||'';
+  document.getElementById('herr-costo-unidad').value = eq?.costoUnidad||'día';
+  document.getElementById('herr-proveedor').value = eq?.proveedor||'';
+  document.getElementById('herr-mant-fecha').value = eq?.mantFecha||'';
+  document.getElementById('herr-notas').value = eq?.notas||'';
+  const obraSelect = document.getElementById('herr-obra');
+  obraSelect.innerHTML = '<option value="">Sin asignar</option>' +
+    state.projects.map(p=>`<option value="${p.id}"${eq?.obraId===p.id?' selected':''}>${p.name}</option>`).join('');
+  setHerrStatus(eq?.status||'disponible');
+  document.getElementById('herrModal').classList.add('open');
+}
+
+function setHerrStatus(s){
+  herrStatus=s;
+  ['disp','uso','mant','rent'].forEach(k=>{
+    const btn=document.getElementById('btn-herr-'+k);
+    if(btn) btn.className='method-btn';
+  });
+  const map={disponible:'disp','en-uso':'uso',mantenimiento:'mant',rentado:'rent'};
+  const btn=document.getElementById('btn-herr-'+map[s]);
+  if(btn) btn.className='method-btn active-tr';
+}
+
+async function saveHerr(){
+  const nombre=document.getElementById('herr-nombre').value.trim();
+  if(!nombre){shakeInput('herr-nombre');return;}
+  if(!state.equipo)state.equipo=[];
+  const editId=document.getElementById('herr-edit-id').value;
+  const eq={
+    id:editId||uid(),
+    nombre,
+    tipo:document.getElementById('herr-tipo').value,
+    propiedad:document.getElementById('herr-propiedad').value,
+    marca:document.getElementById('herr-marca').value.trim(),
+    serie:document.getElementById('herr-serie').value.trim(),
+    status:herrStatus,
+    obraId:document.getElementById('herr-obra').value||null,
+    costo:parseFloat(document.getElementById('herr-costo').value)||0,
+    costoUnidad:document.getElementById('herr-costo-unidad').value,
+    proveedor:document.getElementById('herr-proveedor').value.trim(),
+    mantFecha:document.getElementById('herr-mant-fecha').value,
+    notas:document.getElementById('herr-notas').value.trim(),
+    updatedAt:new Date().toISOString(),
+  };
+  if(!eq.createdAt) eq.createdAt=new Date().toISOString();
+  const idx=state.equipo.findIndex(e=>e.id===editId);
+  if(idx>=0) state.equipo[idx]=eq; else state.equipo.push(eq);
+  await saveState();
+  document.getElementById('herrModal').classList.remove('open');
+  renderHerramienta();
+  showToast('✅ '+(editId?'Actualizado':'Registrado')+': '+nombre);
+}
+
+async function delHerr(id){
+  if(!confirm('¿Eliminar este equipo?'))return;
+  state.equipo=(state.equipo||[]).filter(e=>e.id!==id);
+  await saveState();
+  renderHerramienta();
+  showToast('Equipo eliminado');
+}
+
+function renderHerramienta(){
+  const proj=state.projects.find(p=>p.id===activeProject);
+  document.getElementById('herr-subtitle').textContent=proj?proj.name:'Haus Laak';
+  let equipo=state.equipo||[];
+  // Filter by tab
+  if(herrTab!=='todos') equipo=equipo.filter(e=>e.status===herrTab);
+  const all=state.equipo||[];
+  // KPIs
+  const disp=all.filter(e=>e.status==='disponible').length;
+  const uso=all.filter(e=>e.status==='en-uso').length;
+  const mant=all.filter(e=>e.status==='mantenimiento').length;
+  document.getElementById('herr-kpis').innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:18px;font-weight:800;color:var(--green)">${disp}</div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Disponible</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:18px;font-weight:800;color:var(--accent2)">${uso}</div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">En uso</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
+      <div style="font-size:18px;font-weight:800;color:var(--amber)">${mant}</div>
+      <div style="font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase">Mant.</div>
+    </div>`;
+  const list=document.getElementById('herr-list');list.innerHTML='';
+  if(!equipo.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">🔧</div><div class="empty-text">Sin equipo registrado. Toca ＋ para agregar.</div></div>';
+    return;
+  }
+  const TIPO_ICONS={'Maquinaria pesada':'🚜','Herramienta eléctrica':'⚡','Herramienta manual':'🔨','Equipo de medición':'📐','Vehículo':'🚛','Andamio / Cimbra':'🏗️','Equipo de seguridad':'🦺','Otro':'🔧'};
+  const STATUS_LABEL={disponible:'Disponible','en-uso':'En uso',mantenimiento:'Mantenimiento',rentado:'Rentado a 3°'};
+  const STATUS_CLS={disponible:'status-disponible','en-uso':'status-en-uso',mantenimiento:'status-mantenimiento',rentado:'status-rentado'};
+  equipo.forEach(eq=>{
+    const obra=state.projects.find(p=>p.id===eq.obraId);
+    const icon=TIPO_ICONS[eq.tipo]||'🔧';
+    const card=document.createElement('div');card.className='herr-card';
+    card.innerHTML=`
+      <div style="padding:14px">
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px">
+          <div style="font-size:26px;flex-shrink:0">${icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:800">${eq.nombre}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${eq.tipo} · ${eq.propiedad}${eq.marca?' · '+eq.marca:''}</div>
+          </div>
+          <span class="herr-status ${STATUS_CLS[eq.status]||''}">${STATUS_LABEL[eq.status]||eq.status}</span>
+        </div>
+        ${obra?`<div style="font-size:11px;color:var(--accent);margin-bottom:6px">📍 ${obra.name}</div>`:''}
+        ${eq.costo?`<div style="font-size:11px;color:var(--muted)">💵 ${fmtFull(eq.costo)} / ${eq.costoUnidad||'día'}${eq.proveedor?' · '+eq.proveedor:''}</div>`:''}
+        ${eq.mantFecha?`<div style="font-size:11px;color:${new Date(eq.mantFecha)<new Date()?'var(--red)':'var(--amber)'};margin-top:4px">🔧 Mant: ${eq.mantFecha}</div>`:''}
+        ${eq.serie?`<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px">${eq.serie}</div>`:''}
+        ${eq.notas?`<div style="font-size:11px;color:var(--muted);margin-top:4px;font-style:italic">${eq.notas}</div>`:''}
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button onclick="openAddHerr('${eq.id}')" style="flex:1;padding:8px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer">✏️ Editar</button>
+          <button onclick="delHerr('${eq.id}')" style="padding:8px 14px;border-radius:10px;border:1px solid rgba(255,68,68,.3);background:rgba(255,68,68,.08);color:var(--red);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer">🗑</button>
+        </div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+// ── CATÁLOGO HAUS LAAK 2026 v2 ──────────────────────────────────
+// 300 conceptos unificados: Fresnos (validado) + APUs auditados + HL conservado
+// Generado: 17 may 2026 · FSC HL = 1.4807 · FSC Público = 1.2610
+const HL_CATALOG = [
+
+  // ─── PRELIMINARES ───
+  {clave:'FR-06020006',desc:'SONDEO POR MEDIOS MANUALES PARA UBICACIÓN DE INSTALACIONES EXISTENTES DE 1.20 x1.20 m Y DE 1.00 A 1.40 m DE PROFUNDIDAD. INCLUYE: APILE DE MATERIAL PRODUCTO DE LA EXCAVACIÓN, MANO DE OBRA Y HERRAMIENTA.',um:'PZ',pu:1464.94,cat:'PRELIMINARES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+
+  // ─── DEMOLICIÓN ───
+  {clave:'FR-04010021',desc:'DEMOLICIÓN A MAQUINA DE CARPETA ASFÁLTICA DE ESPESOR VARIABLE. INCLUYE: APILE DE MATERIAL, CARGA Y ACARREO DENTRO DE LA OBRA, HERRAMIENTA, EQUIPO, MANO DE OBRA Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'M3',pu:457.94,cat:'DEMOLICIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04010093',desc:'DEMOLICIÓN A MÁQUINA DE GUARNICIÓN DE CONCRETO. INCLUYE: APILE DE MATERIAL, ACARREOS DENTRO DE LA OBRA, EQUIPO, HERRAMIENTA, MANO DE OBRA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:626.99,cat:'DEMOLICIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04010135',desc:'DEMOLICIÓN A MÁQUINA DE BANQUETA DE CONCRETO SIMPLE DE 8 A 10 CM. DE ESPESOR. INCLUYE: APILE DE MATERIAL, ACARREO DENTRO DE LA OBRA, HERRAMIENTA Y MANO DE OBRA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'M2',pu:53.73,cat:'DEMOLICIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04010826',desc:'DEMOLICION A MAQUINA DE ESTRUCTURAS DE CONCRETO ARMADO CON RETROEXCAVADORA CON MARTILLO. INCLUYE: EQUIPO, HERRAMIENTA, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARRA SU COMPLETA EJECUCIÓN.',um:'M3',pu:766.51,cat:'DEMOLICIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05010061',desc:'RETIRO DE TUBERÍA POR MEDIOS MANUALES DE AGUA POTABLE DE PVC, ASBESTO O SIMILAR DE 2" A 4" DE DIÁMETRO, SIN RECUPERACIÓN DE MATERIAL. INCLUYE: CORTE DE LA TUBERÍA, CARGA A MANO, ACARREO Y APILE DENTRO DE LA OBRA, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN. CUANTIFICAR APARTE EXCAVACIONES.',um:'ML',pu:24.19,cat:'DEMOLICIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06010025',desc:'DEMOLICIÓN A MÁQUINA DE POZO DE VISITA TIPO COMÚN DE 0.60 A 1.20 M DE DIÁMETRO, DE 1.00 A 2.00 M DE PROFUNDIDAD. INCLUYE: EXTRACCIÓN Y APILE DE MATERIAL, CARGA A MÁQUINA DE MATERIAL PRODUCTO DE LA DEMOLICIÓN, ACARREO EN CAMIÓN DE VOLTEO TAPADO CON LONA, AL SITIO O BANCO DE DESPERDICIO AUTORIZADO POR LA AUTORIDAD COMPETENTE, RECUPERACIÓN DE BROCAL Y TAPA SI ES DE FO.FO., MANO DE OBRA, EQUIPO, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:1367.63,cat:'DEMOLICIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06010196',desc:'DEMOLICIÓN A MÁQUINA DE TUBERÍA DE CONCRETO DE 0.15 A 0.45 M DE DIÁMETRO. INCLUYE: APILE DE MATERIAL PARA SU POSTERIOR CARGA Y ACARREO, EQUIPO, MANO DE OBRA, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'ML',pu:60.20,cat:'DEMOLICIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+
+  // ─── EXCAVACIÓN ───
+  {clave:'FR-04020002',desc:'EXCAVACIÓN A MÁQUINA A CIELO ABIERTO EN MATERIAL TIPO "B" HASTA 2.00 M EN VIALIDADES. INCLUYE: EQUIPO Y OPERACIÓN',um:'M3',pu:79.11,cat:'EXCAVACIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04020016',desc:'EXCAVACIÓN A MANO A CIELO ABIERTO EN MATERIAL TIPO "B" HASTA 2.00 m DE PROFUNDIDAD. INCLUYE: CORTE, EXTRACCIÓN, REMOCIÓN, AFINAMIENTO DEL FONDO Y LOS TALUDES, TRASPALEO HORIZONTAL, MANO DE OBRA Y HERRAMIENTA.',um:'M3',pu:436.63,cat:'EXCAVACIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05020013',desc:'EXCAVACIÓN A MANO EN ZANJA EN MATERIAL TIPO "B" HASTA 2.00 m DE PROFUNDIDAD. INCLUYE: CORTE, EXTRACCIÓN, REMOCIÓN, AFINAMIENTO DEL FONDO Y LOS TALUDES, TRASPALEO HORIZONTAL, MANO DE OBRA Y HERRAMIENTA.',um:'M3',pu:495.96,cat:'EXCAVACIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05020014',desc:'EXCAVACIÓN A MÁQUINA EN ZANJA EN MATERIAL TIPO "B" HASTA 2.00 m DE PROFUNDIDAD. INCLUYE: CORTE, EXTRACCIÓN, REMOCIÓN, AFINAMIENTO DEL FONDO Y LOS TALUDES, TRASPALEO HORIZONTAL, MAQUINARIA, MANO DE OBRA Y HERRAMIENTA.',um:'M3',pu:117.43,cat:'EXCAVACIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020010',desc:'EXCAVACIÓN A MÁQUINA EN ZANJA EN MATERIAL TIPO "B" HASTA 2.00 m DE PROFUNDIDAD. INCLUYE: CORTE, EXTRACCIÓN, REMOCIÓN, AFINAMIENTO DEL FONDO Y LOS TALUDES, TRASPALEO HORIZONTAL, MAQUINARIA, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'M3',pu:117.43,cat:'EXCAVACIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020011',desc:'EXCAVACIÓN A MÁQUINA EN ZANJA EN MATERIAL TIPO "C" HASTA 2.00 M DE PROFUNDIDAD. INCLUYE: CORTE, EXTRACCIÓN, REMOCIÓN, AFINAMIENTO DEL FONDO Y LOS TALUDES, TRASPALEO HORIZONTAL, MAQUINARIA, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'M3',pu:614.65,cat:'EXCAVACIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020012',desc:'EXCAVACIÓN A MANO EN ZANJA EN MATERIAL TIPO "B" HASTA 2.00 m DE PROFUNDIDAD. INCLUYE: CORTE, EXTRACCIÓN, REMOCIÓN, AFINAMIENTO DEL FONDO Y LOS TALUDES, TRASPALEO HORIZONTAL, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'M3',pu:495.96,cat:'EXCAVACIÓN',estado:'VALIDADO',origen:'SOP/2025-0017'},
+
+  // ─── ACARREOS ───
+  {clave:'FR-04020041',desc:'CARGA A MÁQUINA DE MATERIAL PRODUCTO DE LA EXCAVACIÓN O DEMOLICIÓN A CAMIÓN DE VOLTEO PARA SU ACARREO, MEDIDO COMPACTO. INCLUYE: MAQUINARIA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:49.17,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04020051',desc:'ACARREO PRIMER KILÓMETRO EN CAMIÓN DE VOLTEO TAPADO CON LONA FUERA DE LA OBRA DEL MATERIAL PRODUCTO DE LA EXCAVACIÓN O DEMOLICIÓN, MEDIDO COMPACTO. INCLUYE: EQUIPO, OPERACIÓN, PAGO DERECHOS DE TIRO EN BANCO AUTORIZADO POR LA AUTORIDAD COMPETENTE Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'M3',pu:55.78,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04020052',desc:'ACARREO KILÓMETROS SUBSECUENTES EN CAMIÓN DE VOLTEO TAPADO CON LONA FUERA DE LA OBRA DEL MATERIAL PRODUCTO DE LA EXCAVACIÓN, FRESADO O DEMOLICIÓN, MEDIDO COMPACTO. INCLUYE: EQUIPO, OPERACIÓN Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'M3-KM',pu:14.35,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05020016',desc:'ACARREO PRIMER KILÓMETRO EN CAMIÓN DE VOLTEO TAPADO CON LONA FUERA DE LA OBRA DEL MATERIAL PRODUCTO DE LA EXCAVACIÓN O DEMOLICIÓN, MEDIDO COMPACTO. INCLUYE: EQUIPO, OPERACIÓN Y PAGO DERECHOS DE TIRO EN BANCO AUTORIZADO POR LA AUTORIDAD COMPETENTE.',um:'M3',pu:55.78,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05020017',desc:'ACARREO KILÓMETROS SUBSECUENTES EN CAMIÓN DE VOLTEO TAPADO CON LONA FUERA DE LA OBRA DEL MATERIAL PRODUCTO DE LA EXCAVACIÓN O DEMOLICIÓN, MEDIDO COMPACTO. INCLUYE: EQUIPO Y OPERACIÓN.',um:'M3-KM',pu:14.35,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05020036',desc:'CARGA A MÁQUINA DE MATERIAL PRODUCTO DE LA EXCAVACIÓN O DEMOLICIÓN A CAMIÓN DE VOLTEO PARA SU ACARREO, MEDIDO COMPACTO. INCLUYE: EQUIPO Y OPERACIÓN.',um:'M3',pu:49.17,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05020037',desc:'CARGA A MANO DE MATERIAL PRODUCTO DE EXCAVACIÓN O DEMOLICIÓN A CAMIÓN DE VOLTEO PARA ACARREO, MEDIDO COMPACTO. INCLUYE: MANO DE OBRA Y HERRAMIENTA.',um:'M3',pu:268.13,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020035',desc:'CARGA A MÁQUINA DE MATERIAL PRODUCTO DE LA EXCAVACIÓN A CAMIÓN DE VOLTEO PARA SU ACARREO. INCLUYE: MAQUINARIA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:49.17,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020036',desc:'CARGA A MANO DE MATERIAL PRODUCTO DE EXCAVACIÓN O DEMOLICIÓN A CAMIÓN DE VOLTEO PARA ACARREO, MEDIDO COMPACTO. INCLUYE: MANO DE OBRA, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN',um:'M3',pu:268.13,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020070',desc:'ACARREO PRIMER KILÓMETRO EN CAMIÓN DE VOLTEO TAPADO CON LONA FUERA DE LA OBRA DEL MATERIAL PRODUCTO DE LA EXCAVACIÓN O DEMOLICIÓN, MEDIDO COMPACTO. INCLUYE: EQUIPO, OPERACIÓN, PAGO DERECHOS DE TIRO EN BANCO AUTORIZADO POR LA AUTORIDAD COMPETENTE Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'M3',pu:55.78,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020071',desc:'ACARREO KILÓMETROS SUBSECUENTES EN CAMIÓN DE VOLTEO TAPADO CON LONA FUERA DE LA OBRA DEL MATERIAL PRODUCTO DE LA EXCAVACIÓN O DEMOLICIÓN, MEDIDO COMPACTO. INCLUYE: EQUIPO, OPERACIÓN Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'M3-KM',pu:14.35,cat:'ACARREOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+
+  // ─── RELLENOS Y BASES ───
+  {clave:'FR-04020021',desc:'AFINAMIENTO Y COMPACTACIÓN A MÁQUINA DEL TERRENO NATURAL, AL 90 % DEL PESO VOLUMÉTRICO SECO MÁXIMO DE LA COMPACTACIÓN PORTER. INCLUYE: MAQUINARIA Y AGUA.',um:'M2',pu:16.09,cat:'RELLENOS Y BASES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04020100',desc:'RELLENO CON TEPETATE DE BANCO, COMPACTADO CON EQUIPO MANUAL AL 90 % DEL PESO VOLUMÉTRICO SECO MÁXIMO DE LA COMPACTACIÓN PORTER, EN CAPAS DE NO MAS DE 20 CM DE ESPESOR. INCLUYE: MATERIALES, ACARREOS A UNA ESTACIÓN, HOMOGENIZACIÓN DE LA HUMEDAD CON AGUA, MANO DE OBRA, EQUIPO, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:640.55,cat:'RELLENOS Y BASES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04020250',desc:'ACOSTILLADO CON TEPETATE DE BANCO EN ZANJA, COMPACTADO CON EQUIPO MANUAL Y AGUA AL 90 % DEL PESO VOLUMÉTRICO SECO MÁXIMO DE LA COMPACTACIÓN PORTER, ESPESOR DE CAPAS INDICADO POR LA SUPERVISIÓN. INCLUYE: SUMINISTRO Y COLOCACIÓN DE LOS MATERIALES, EQUIPO, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:669.94,cat:'RELLENOS Y BASES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04020320',desc:'SUBRASANTE FORMADA CON TEPETATE DE BANCO, EXTENDIDO Y PROCESADO CON MOTONIVELADORA Y COMPACTADO CON VIBROCOMPACTADOR AL 95 % DEL PESO VOLUMÉTRICO SECO MÁXIMO DE LA COMPACTACIÓN PORTER, EN CAPAS DE HASTA 20 CM DE ESPESOR. INCLUYE: SUMINISTRO DE MATERIALES, EXTENDIDOS, APLICACIÓN Y PROCESADO DE AGUA PARA ALCANZAR LA HUMEDAD OPTIMA, EQUIPO, OPERACIÓN, MANO DE OBRA, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:576.87,cat:'RELLENOS Y BASES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04020332',desc:'BASE FORMADA CON GRAVA TRITURADA DE 1 1/2" A FINOS DE BANCO, EXTENDIDA Y PROCESADA CON MOTONIVELADORA Y COMPACTADA CON VIBROCOMPACTADOR AL 95 % DEL PESO VOLUMÉTRICO SECO MÁXIMO DE LA COMPACTACIÓN PORTER, EN CAPAS DE HASTA 20 CM DE ESPESOR. INCLUYE: SUMINISTRO DE MATERIALES, EXTENDIDOS, APLICACIÓN Y PROCESADO DE AGUA PARA ALCANZAR LA HUMEDAD OPTIMA, CUÑAS DE SOBREANCHO, EQUIPO, OPERACIÓN, MANO DE OBRA, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:1045.48,cat:'RELLENOS Y BASES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05020090',desc:'CAMA DE ARENA PARA APOYO DE TUBERÍA. INCLUYE: SUMINISTRO Y ACARREO DE MATERIAL, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN',um:'M3',pu:752.40,cat:'RELLENOS Y BASES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020124',desc:'RELLENO EN ZANJA CON TEPETATE DE BANCO, COMPACTADO CON EQUIPO MANUAL AL 90 % DEL PESO VOLUMÉTRICO SECO MÁXIMO DE LA COMPACTACIÓN PORTER, EN CAPAS DE HASTA 20 cm DE ESPESOR. INCLUYE: SUMINISTRO Y COLOCACIÓN DE LOS MATERIALES, AGUA, MANO DE OBRA, EQUIPO, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:815.80,cat:'RELLENOS Y BASES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020140',desc:'PLANTILLA DE TEPETATE DE BANCO, COMPACTADA CON EQUIPO MANUAL AL 90 % DEL PESO VOLUMÉTRICO SECO MÁXIMO DE LA COMPACTACIÓN PORTER. INCLUYE: SUMINISTRO Y ACARREO DE LOS MATERIALES, AGUA, EQUIPO, HERRAMIENTA, MANO DE OBRA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:710.89,cat:'RELLENOS Y BASES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06050206',desc:'CONCRETO FLUIDO RF 25 KG/CM2 A TIRO DIRECTO, PARA RELLENO E INHABILITACIÓN DE TUBERÍA SANITARIA INCLUYE: SUMINISTRO COLOCACIÓN, MANO DE OBRA Y HERRAMIENTA, LIMPIEZA Y TODO LO NECESARIO PARA SU CORRECTA INSTALACIÓN.',um:'M3',pu:3310.27,cat:'RELLENOS Y BASES',estado:'VALIDADO',origen:'SOP/2025-0017'},
+
+  // ─── CIMENTACIÓN ───
+  {clave:'CIM-010',desc:'Impermeabilización de losa de cimentación',um:'m²',pu:185.00,cat:'CIMENTACIÓN',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'CIM-011',desc:'Muro de block de concreto 15×20×40 bajo suelo',um:'m²',pu:485.00,cat:'CIMENTACIÓN',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'HL-CIM-001',desc:'Plantilla de concreto f\'c=100 kg/cm² e=5 cm',um:'m²',pu:256.99,cat:'CIMENTACIÓN',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-CIM-002',desc:'Zapata corrida concreto f\'c=200 kg/cm² armada #3',um:'m³',pu:7205.81,cat:'CIMENTACIÓN',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-CIM-003',desc:'Dado concreto f\'c=200 40×40×40 cm armado',um:'pza',pu:1006.25,cat:'CIMENTACIÓN',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-CIM-004',desc:'Cadena de cimentación 15×20 cm concreto f\'c=200 armada',um:'ml',pu:658.93,cat:'CIMENTACIÓN',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+
+  // ─── ESTRUCTURA ───
+  {clave:'FR-06050023',desc:'HABILITADO Y ARMADO DE ACERO DE REFUERZO EN ESTRUCTURA, FY=4200 kg/cm2, DEL No. 3 (3/8") DE DIÁMETRO. INCLUYE: SUMINISTRO Y ACARREO DE LOS MATERIALES, TRASLAPES, ALAMBRE, MANO DE OBRA, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'KG',pu:56.16,cat:'ESTRUCTURA',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06050040',desc:'CIMBRA ACABADO COMÚN EN SUBESTRUCTURA CON MADERA DE PINO DE 3a. INCLUYE: MATERIALES, DESPERDICIOS, HABILITADO, CIMBRADO, DESCIMBRADO, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M2',pu:529.11,cat:'ESTRUCTURA',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06050086',desc:'CONCRETO F\'C=250 kg/cm2 T.M.A. 3/4" HECHO EN OBRA CON REVOLVEDORA, RESISTENCIA NORMAL, EN CARRETILLA O BOTE EN ESTRUCTURA. INCLUYE: MATERIALES, FABRICACIÓN, ACARREO A UNA ESTACIÓN, VACIADO, VIBRADO, MEMBRANA DE CURADO, MANO DE OBRA, EQUIPO, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M3',pu:5604.31,cat:'ESTRUCTURA',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'HL-EST-001',desc:'Castillo K1 15×15 cm concreto f\'c=200 armex 15×15-4Ø3/8" + estribos',um:'ml',pu:776.82,cat:'ESTRUCTURA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-EST-002',desc:'Dala de cerramiento 15×20 cm f\'c=200 armex 15×20-4Ø3/8"',um:'ml',pu:879.42,cat:'ESTRUCTURA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-EST-003',desc:'Trabe 25×40 cm concreto f\'c=250 armada (acero #4 + estribos #3)',um:'ml',pu:2208.01,cat:'ESTRUCTURA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-EST-004',desc:'Losa maciza concreto f\'c=250 e=12 cm armada doble lecho #3@15',um:'m²',pu:2182.33,cat:'ESTRUCTURA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+
+  // ─── CONCRETOS ───
+  {clave:'CON-009',desc:'Castillo de concreto 12×20cm 4#3 est¼@15',um:'ml',pu:285.01,cat:'CONCRETOS',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'CON-010',desc:'Castillo de concreto 15×20cm 4#4 est¼@15',um:'ml',pu:347.99,cat:'CONCRETOS',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'CON-011',desc:'Cadena de amarre 15×20cm 4#3 est¼@15',um:'ml',pu:310.00,cat:'CONCRETOS',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'CON-012',desc:'Cadena de amarre 20×20cm 4#4 est3/8@15',um:'ml',pu:385.00,cat:'CONCRETOS',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'CON-025',desc:'Cimbra metálica para columnas',um:'m²',pu:285.01,cat:'CONCRETOS',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'CON-026',desc:'Cimbra común madera para losas',um:'m²',pu:185.00,cat:'CONCRETOS',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'CON-027',desc:'Cimbra de triplay para acabado aparente',um:'m²',pu:385.00,cat:'CONCRETOS',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+
+  // ─── ACERO ───
+  {clave:'ACE-001',desc:'Acero de refuerzo fy=4200 #2 (6mm)',um:'kg',pu:32.00,cat:'ACERO',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'ACE-007',desc:'Malla electrosoldada 6×6-10/10',um:'m²',pu:145.00,cat:'ACERO',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'ACE-008',desc:'Malla electrosoldada 4×4-6/6',um:'m²',pu:185.00,cat:'ACERO',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+  {clave:'ACE-009',desc:'Malla electrosoldada 6×6-6/6',um:'m²',pu:168.00,cat:'ACERO',estado:'POR DESARROLLAR APU',origen:'HL Catálogo 2025'},
+
+  // ─── ESTRUCTURA METÁLICA ───
+  {clave:'MET-002',desc:'Columna tubular HSS 4×4 acero A-36',um:'kg',pu:62.00,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-005',desc:'Viga cajón soldada acero A-36',um:'kg',pu:67.99,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-007',desc:'Losacero calibre 22 galvanizado',um:'m²',pu:185.00,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-008',desc:'Losacero calibre 20 galvanizado',um:'m²',pu:215.00,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-009',desc:'Cubierta Ternium calibre 26 galvanizada',um:'m²',pu:248.00,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-010',desc:'Cubierta Fibraforte traslúcida 2mm',um:'m²',pu:285.01,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-011',desc:'Impermeabilizante para cubierta metálica',um:'m²',pu:85.01,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-012',desc:'Placa base 30×30×1.5cm soldada',um:'pza',pu:485.00,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-013',desc:'Soldadura E-6011 inc. electrodo y mano de obra',um:'kg',pu:185.00,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-014',desc:'Pintura anticorrosiva + esmalte 2 manos',um:'m²',pu:67.99,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-015',desc:'Tornillo hilti autorroscable para cubierta',um:'pza',pu:8.50,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-016',desc:'Estructura de acero para cancha de pádel',um:'kg',pu:72.01,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-017',desc:'Tubo rectangular 3×6 acero A-36',um:'kg',pu:54.99,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-019',desc:'Plafón de lámina galvanizada cal.26',um:'m²',pu:185.00,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MET-020',desc:'Celosía metálica ornamental',um:'m²',pu:485.00,cat:'ESTRUCTURA METÁLICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+
+  // ─── MAMPOSTERÍA ───
+  {clave:'HL-MAM-001',desc:'Muro de tabique rojo recocido 7×14×28 cm e=14 cm asentado con mortero 1:3',um:'m²',pu:1060.21,cat:'MAMPOSTERÍA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-MAM-002',desc:'Muro de tabicón macizo 10×14×28 e=14 cm asentado con mortero 1:3',um:'m²',pu:988.22,cat:'MAMPOSTERÍA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-MAM-003',desc:'Muro de block hueco 12×20×40 cm asentado con mortero 1:3',um:'m²',pu:762.43,cat:'MAMPOSTERÍA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'MAM-001',desc:'Muro tabicón 10×14×28 mortero 1:3',um:'m²',pu:485.00,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-002',desc:'Muro tabicón 10×14×28 mortero 1:4 h≤4m',um:'m²',pu:444.99,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-003',desc:'Muro tabique rojo 7×14×28 mortero 1:3',um:'m²',pu:520.01,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-004',desc:'Muro tabique rojo 7×14×28 mortero 1:4',um:'m²',pu:485.00,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-005',desc:'Muro block hueco 15×20×40 mortero 1:4',um:'m²',pu:485.00,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-006',desc:'Muro block sólido 12×20×40 mortero 1:4',um:'m²',pu:548.01,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-007',desc:'Muro block aparente 15×20×40 junta rehundida',um:'m²',pu:685.00,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-008',desc:'Muro block punta de diamante decorativo',um:'m²',pu:784.99,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-009',desc:'Muro de piedra braza h≤2m mortero 1:4',um:'m³',pu:1484.99,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-010',desc:'Muro tabique aparente junta rehundida',um:'m²',pu:685.00,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-011',desc:'Barda de tabicón doble e=20cm h=2m',um:'ml',pu:485.00,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-012',desc:'Barda de block 15cm h=2m c/cadenas y castillos',um:'ml',pu:548.01,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-013',desc:'Pretil de tabicón 10×14×28 h=0.90m',um:'ml',pu:285.01,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-014',desc:'Castillos de tabicón en esquinas y remates',um:'pza',pu:185.00,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'MAM-015',desc:'Pegas de block y tabicón en doble hilada',um:'m²',pu:85.01,cat:'MAMPOSTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+
+  // ─── TECHOS ───
+  {clave:'TEC-001',desc:'Impermeabilización con membrana tipo Torchon',um:'m²',pu:185.00,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-002',desc:'Impermeabilización acrílica 3 capas',um:'m²',pu:95.00,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-003',desc:'Impermeabilización poliuretano proyectado e=3mm',um:'m²',pu:285.01,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-004',desc:'Pendiente de mortero 1:4 e=3-5cm',um:'m²',pu:148.00,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-005',desc:'Capa separadora polietileno calibre 600',um:'m²',pu:28.00,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-007',desc:'Teja española de barro rojo natural',um:'m²',pu:485.00,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-008',desc:'Teja plana de concreto tipo Ursa',um:'m²',pu:347.99,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-009',desc:'Lámina de policarbonato alveolar e=6mm',um:'m²',pu:485.00,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-010',desc:'Membrana EPDM para azoteas planas e=1.2mm',um:'m²',pu:385.00,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-013',desc:'Chaflán de mortero en esquinas de azotea',um:'ml',pu:65.00,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'TEC-014',desc:'Pretil de tabicón h=40cm impermeabilizado',um:'ml',pu:285.01,cat:'TECHOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+
+  // ─── AGUA POTABLE ───
+  {clave:'FR-04410404',desc:'REPARACIÓN DE TOMA DOMICILIARIA DE AGUA POTABLE CON MANGUERA POLIETILENO CON ALMA DE ALUMINIO DE 1/2" DE DIÁMETRO Y 3.00 M DE LONGITUD PROMEDIO. INCLUYE: EXCAVACIÓN DE CEPA POR MEDIOS MANUALES DE 0.40X0.60 M, LOCALIZACIÓN, EXCAVACIÓN Y EXPOSICIÓN DE CONEXIONES EN TUBO DE LINEA PRINCIPAL, CIERRE DE VALVULA DE INSERCIÓN PARA CORTE Y RETIRO DE MANGUERA DAÑADA, SUMINISTRO DE COPLES DE REPARACIÓN, SUMINISTRO, INSTALACIÓN Y TENDIDO DE MANGUERA, RELLENO CON MATERIAL INERTE PRODUCTO DE LA EXCAVACIÓN COMPACTADO CON PISÓN EN CAPAS DE 20 CM DE ESPESOR, MATERIALES, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:1191.83,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05020101',desc:'CINTA PLÁSTICA CON LA LEYENDA "CEA LÍNEA DE CONDUCCIÓN DE AGUA POTABLE" PARA ADVERTENCIA EN ZANJA. INCLUYE: SUMINISTRO Y COLOCACIÓN DENTRO DE ZANJA, MANO DE OBRA Y HERRAMIENTA.',um:'ML',pu:12.02,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05060013',desc:'CONSTRUCCIÓN DE ATRAQUE DE CONCRETO SIMPLE F\'C=150 kg/cm2 DE 0.30X0.30X0.40 m. INCLUYE: MATERIALES, CIMBRA, CIMBRADO, DESCIMBRADO, EQUIPO, HERRAMIENTA, MANO DE OBRA Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'PZ',pu:527.41,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05110016',desc:'TUBERÍA DE PVC HIDRÁULICO RD-26 DE 3" (75 MM) DE DIÁMETRO. INCLUYE: SUMINISTRO, TRASLADO AL SITIO DE LOS TRABAJOS, INSTALACIÓN, MATERIALES, MANO DE OBRA Y HERRAMIENTA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'ML',pu:136.87,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05110125',desc:'CODO DE PVC RD-26 DE 45° X 3" DIÁMETRO DE PVC RD-26 SISTEMA INGLÉS CON ANILLO Y EMPAQUE INTEGRADO RIEBER. INCLUYE: SUMINISTRO E INSTALACIÓN, FLETE AL LUGAR DE LA OBRA, CARGA Y DESCARGA, MANIOBRAS LOCALES, MANO DE OBRA Y LA HERRAMIENTA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:397.69,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05110232',desc:'EXTREMIDAD ESPIGA PVC HIDRÁULICO INGLÉS RD-26 DE 3" DE DIÁMETRO. INCLUYE: SUMINISTRO, COLOCACIÓN, MATERIALES, MANO DE OBRA Y HERRAMIENTA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:229.65,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05110242',desc:'EXTREMIDAD CAMPANA PVC HIDRÁULICO INGLÉS RD-26 DE 3" DE DIÁMETRO. INCLUYE: SUMINISTRO, COLOCACIÓN, MANO DE OBRA Y HERRAMIENTA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:382.57,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05110307',desc:'TAPÓN CAMPANA DE PVC HIDRÁULICO RD-26 DE 4" DE DIÁMETRO. INCLUYE: SUMINISTRO, COLOCACIÓN, MANO DE OBRA Y HERRAMIENTA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:564.29,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05130019',desc:'TUBERÍA DE FoGo DE 13 mm DE DIÁMETRO PARA TOMA DE AGUA DOMICILIARIA. INCLUYE: SUMINISTRO Y COLOCACIÓN DE LOS MATERIALES, FORJADO DE ROSCA EN LOS EXTREMOS, MANO DE OBRA, EQUIPO Y HERRAMIENTA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'ML',pu:247.42,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05180035',desc:'CRUZ DE FOFO DE 4" X 4" BRIDADA. INCLUYE: MATERIAL, MANO DE OBRA Y HERRAMIENTA PARA SU EJECUCIÓN.',um:'PZ',pu:4686.23,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05180088',desc:'REDUCCIÓN FoFo DE 4"X3". INCLUYE: FLETE AL LUGAR DE LA OBRA, MANIOBRAS, ACARREOS, LIMPIEZA, MANO DE OBRA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:1844.86,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05210012',desc:'ADAPTADOR UNIVERSAL RANGO AMPLIO DE 4" R 107-135 MM. INCLUYE: SUMINISTRO E INSTALACIÓN, MATERIAL, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU EJECUCIÓN.',um:'PZ',pu:2454.17,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05220010',desc:'ABRAZADERA DE PVC 3"X1/2". INCLUYE: MATERIAL, MANO DE OBRA Y HERRAMIENTA PARA SU EJECUCIÓN.',um:'PZ',pu:175.00,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05220035',desc:'CONECTOR KITEC DE 1/2" DE CUERDA EXTERIOR. INCLUYE: MATERIALES, HERRAMIENTA Y MANO DE OBRA PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:128.94,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05220048',desc:'TUBERÍA KITEC DE 1/2" (13 mm) DE DIÁMETRO. INCLUYE: MATERIALES, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'ML',pu:38.26,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05220059',desc:'CODO COMBINADO DE BRONCE DE 1/2"X90°. INCLUYE: MATERIAL, MATERIAL DE SELLO, MANO DE OBRA Y HERRAMIENTA PARA SU COMPLETA EJECUCIÓN',um:'PZ',pu:207.66,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-05221105',desc:'REPARACIÓN DE TOMA DOMICILIARIA DE AGUA POTABLE CON MANGUERA DE POLIETILENO CON ALMA DE ALUMINIO COLOR AZUL DE 1/2" DE DIÁMETRO Y 5.00 M DE LONGITUD PROMEDIO A TUBO PVC DE 2". INCLUYE: EXCAVACIÓN, RETIRO DE TUBO EXISTENTE, SUSTITUCIÓN DE TUBERÍA, CONEXIONES, RELLENO CON MATERIAL PRODUCTO DE LA EXCAVACIÓN COMPACTADO CON EQUIPO MANUAL, MATERIALES, HERRAMIENTA, MANO DE OBRA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:1061.40,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06020101',desc:'CINTA PLÁSTICA CON LA LEYENDA "CEA LÍNEA DE DRENAJE SANITARIO" PARA ADVERTENCIA EN ZANJA. INCLUYE: SUMINISTRO Y COLOCACIÓN DENTRO DE ZANJA, MANO DE OBRA, HERRAMIENTA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'ML',pu:12.02,cat:'AGUA POTABLE',estado:'VALIDADO',origen:'SOP/2025-0017'},
+
+  // ─── DRENAJE SANITARIO ───
+  {clave:'FR-04411011',desc:'REPARACIÓN DE DESCARGA DOMICILIARIA CON TUBERÍA DE PVC SERIE 20 DE 6" (15 CM) DE DIÁMETRO Y 3.00 M DE LONGITUD PROMEDIO, MEDIANTE COPLES DE REPARACIÓN EN LOS EXTREMOS. INCLUYE: EXCAVACIONES PARA LOCALIZACIÓN Y EXPONER LAS CONEXIONES, CORTE Y RETIRO DE TUBERÍA DAÑADA, CAMA DE ARENA DE 5 CM, MATERIALES, RELLENO CON MATERIAL INERTE PRODUCTO DE LA EXCAVACIÓN COMPACTADO CON PISÓN DE MANO, MATERIALES, HERRAMIENTA, MANO DE OBRA, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:2303.67,cat:'DRENAJE SANITARIO',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04411022',desc:'REPARACIÓN DE DESCARGA DOMICILIARIA CON TUBERÍA DE POLIETILENO DE ALTA DENSIDAD PARA DRENAJE SANITARIO DE 6" (15 cm) DE DIÁMETRO Y 5.00 m DE LONGITUD PROMEDIO.MEDIANTE COPLES DE REPARACIÓN EN LOS EXTREMOS. INCLUYE: EXCAVACIONES PARA LOCALIZACIÓN Y EXPONER LAS CONEXIONES, CORTE Y RETIRO DE TUBERÍA DAÑADA, CAMA DE ARENA DE 5 CM, MATERIALES, RELLENO CON MATERIAL INERTE PRODUCTO DE LA EXCAVACIÓN COMPACTADO CON PISÓN DE MANO, MATERIALES, HERRAMIENTA, MANO DE OBRA, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:3014.14,cat:'DRENAJE SANITARIO',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06010205',desc:'BOMBEO DE ACHIQUE DE 4" DE AGUAS NEGRAS EN LINEA SANITARIA VIVA, CON BOMBA DE 12 HP DE POTENCIA A GASOLINA, BOMBEO DE MATERIAL SATURADO Y CONSOLIDADO DE 0.00 A 1.50 m DE PROFUNDIDAD PROMEDIO. INCLUYE: EXTRACCIÓN DE AGUA POR MEDIOS MECÁNICOS, EQUIPO TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'HR',pu:161.27,cat:'DRENAJE SANITARIO',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06160052',desc:'TUBERÍA DE PVC SISTEMA ANILLO ENCAPSULADO SERIE 16.5 DE 6" (15 CM) DE DIÁMETRO PARA DRENAJE SANITARIO. INCLUYE: SUMINISTRO E INSTALACIÓN DE MATERIALES, ACARREO HASTA EL LUGAR DE LA OBRA, DESCARGA Y ACOMODO DE TUBERÍA; MANO DE OBRA Y HERRAMIENTA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'ML',pu:258.05,cat:'DRENAJE SANITARIO',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06160055',desc:'TUBERÍA DE PVC SISTEMA ANILLO ENCAPSULADO SERIE 16.5 DE 12" (30 CM) DE DIÁMETRO PARA DRENAJE SANITARIO. INCLUYE: SUMINISTRO E INSTALACIÓN DE MATERIALES, ACARREO HASTA EL LUGAR DE LA OBRA, DESCARGA Y ACOMODO DE TUBERÍA, MANO DE OBRA Y HERRAMIENTA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'ML',pu:858.10,cat:'DRENAJE SANITARIO',estado:'VALIDADO',origen:'SOP/2025-0017'},
+
+  // ─── POZOS Y REGISTROS ───
+  {clave:'FR-04280032',desc:'RENIVELACIÓN DE POZO DE VISITA EN ÁREA SIN URBANIZAR, DE 16 A 30 cm DE ALTURA. INCLUYE: DEMOLICIONES, SIN RECUPERACIÓN DE BROCAL Y TAPA, RECONSTRUCCIÓN DE MURO DE TABIQUE ROJO ASENTADO Y JUNTEADO CON MORTERO CEMENTO-ARENA EN PROPORCIÓN 1:3, APLANADO ACABADO PULIDO CON MORTERO CEMENTO-CAL-ARENA EN PROPORCIÓN 1:2:8, SUMINISTRO, COLOCACIÓN Y NIVELACIÓN DE BROCAL Y TAPA, ACARREOS Y RETIRO DE MATERIAL PRODUCTO DE LOS TRABAJOS FUERA DE LA OBRA; MATERIALES, HERRAMIENTA, MANO DE OBRA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:6883.81,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04280190',desc:'RENIVELACIÓN DE TORRENTERA PLUVIAL CON TAPA DE REJILLA TIPO IRVING DE 4" DE PERALTE DE 1.00 A 1.20 m DE ANCHO HASTA 5 cm DE ALTURA. INCLUYE: DEMOLICIÓN ROMPEDORA MANUAL DE CONCRETO HIDRÁULICO PERIMETRAL PARA LIBERAR CONTRAMARCO Y REJILLA, DEMOLICIÓN CON ROMPEDOR MANUAL DE CADENA DE 20X20 cm, RETIRO DE DE REJILLA Y MARCO METÁLICO EXISTENTE CON RECUPERACIÓN DEL MISMO; CONSTRUCCIÓN DE CADENA PERIMETRAL DE 35X35 cm CON TERMINACIÓN EN "L" DE 10X10 cm DE CONCRETO F\'C=250 kg/cm2 ARMADO CON SIETE VARILLAS DEL No. 4 (1/2") Y ESTRIBOS DEL No. 3 (3/8") A CADA 20 cm, HABILITADO Y ARMADO DE ACERO, CIMBRA, CIMBRADO Y DESCIMBRADO, VACIADO DEL CONCRETO, REPOSICIÓN DE PAVIMENTO DE CONCRETO F\'C=250 kg/cm2, MATERIALES, ACARREOS, EQUIPO, HERRAMIENTA, CARGA DE MATERIAL PRODUCTO DE LA DEMOLICIÓN Y DESAZOLVE, ACARREO EN CAMIÓN DE VOLTEO FUERA DE LA OBRA AL LUGAR INDICADO, MANO DE OBRA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'ML',pu:5141.45,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06160001',desc:'CONEXIÓN DE TUBO DE PVC ALCANTARILLADO O POLIETILENO DE ALTA DENSIDAD DE 20 A 30 cm DE DIÁMETRO A POZO DE VISITA EXISTENTE. INCLUYE DEMOLICIÓN DE MURO DE TABIQUE O TABICÓN DE 28 CM DE ESPESOR EN POZO PARA LA COLOCACIÓN DE TUBO, RELLENO ENTRE TUBO Y POZO CON MORTERO CEMENTO-ARENA 1:3, ACABADO EN CARA INTERIOR DE APLANADO PULIDO, MATERIALES, MANO DE OBRA Y HERRAMIENTA.',um:'PZ',pu:1561.49,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06160280',desc:'YEE DE ALCANTARILLADO INYECTABLE DE 12"X6". INCLUYE: CODO DE PVC INYECTADO DE 6"X45, FLETE AL LUGAR DE LA OBRA Y LAS MANIOBRAS LOCALES, MATERIALES, MANO DE OBRA Y HERRAMIENTA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:3752.42,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06330072',desc:'POZO DE VISITA TIPO COMÚN DE 0.60 M A 1.20 M DE DIÁMETRO, DE 1.01 A 1.25 M DE PROFUNDIDAD, A BASE DE MURO DE TABICÓN DE CEMENTO 10 X 14 X 28 CM (NOMINALES) DE 28 CM DE ESPESOR, JUNTEADO Y ASENTADO CON MORTERO CEMENTO-ARENA EN PROPORCIÓN 1:3, APLANADO ACABADO PULIDO CON MORTERO CEMENTO-CAL-ARENA 1:2:8, LOSA DE CONCRETO ARMADO F\'C=200 KG/CM2 DE 15 CM DE ESPESOR HECHO EN OBRA, ARMADA CON ACERO DEL No. 3 (3/8") A CADA 20 CM EN AMBOS SENTIDOS, PLANTILLA DE CONCRETO F\'C=100 KG/CM2 DE 5 CM DE ESPESOR, MESETA DE TABICÓN 10X14X28 CM ASENTADO CON MORTERO CEMENTO-ARENA 1:3 Y APLANADO CON MORTERO CEMENTO-CAL-ARENA 1:2:8, ACABADO PULIDO DE 1.5 CM EN LA PARTE SUPERIOR, FORMACIÓN DE MEDIA CAÑA DE CONCRETO F\'C=150 KG/CM2 ACABADO PULIDO, ESCALONES MARINOS DE POLIPROPILENO CON ALMA DE ACERO COLOCADO APARTIR DE LOS PRIMEROS 60 CM A CADA 40 CM DE SEPARACION. INCLUYE: MATERIALES, HERRAMIENTA, GANCHOS, ACARREOS, MANO DE OBRA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN. CUANTIFICAR APARTE EXCAVACIONES, RELLENOS, BROCAL Y TAPA.',um:'PZ',pu:12111.43,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06330073',desc:'POZO DE VISITA TIPO COMÚN DE 0.60 M A 1.20 M DE DIÁMETRO, DE 1.26 A 1.50 M DE PROFUNDIDAD, A BASE DE MURO DE TABICÓN DE CEMENTO 10 X 14 X 28 CM (NOMINALES) DE 28 CM DE ESPESOR, JUNTEADO Y ASENTADO CON MORTERO CEMENTO-ARENA EN PROPORCIÓN 1:3, APLANADO ACABADO PULIDO CON MORTERO CEMENTO-CAL-ARENA 1:2:8, LOSA DE CONCRETO ARMADO F\'C=200 KG/CM2 DE 15 CM DE ESPESOR HECHO EN OBRA, ARMADA CON ACERO DEL No. 3 (3/8") A CADA 20 CM EN AMBOS SENTIDOS, PLANTILLA DE CONCRETO F\'C=100 KG/CM2 DE 5 CM DE ESPESOR, MESETA DE TABICÓN 10X14X28 CM ASENTADO CON MORTERO CEMENTO-ARENA 1:3 Y APLANADO CON MORTERO CEMENTO-CAL-ARENA 1:2:8, ACABADO PULIDO DE 1.5 CM EN LA PARTE SUPERIOR, FORMACIÓN DE MEDIA CAÑA DE CONCRETO F\'C=150 KG/CM2 ACABADO PULIDO, ESCALONES MARINOS DE POLIPROPILENO CON ALMA DE ACERO COLOCADO APARTIR DE LOS PRIMEROS 60 CM A CADA 40 CM DE SEPARACION. INCLUYE: MATERIALES, HERRAMIENTA, GANCHOS, ACARREOS, MANO DE OBRA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN. CUANTIFICAR APARTE EXCAVACIONES, RELLENOS, BROCAL Y TAPA.',um:'PZ',pu:13830.88,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06330074',desc:'POZO DE VISITA TIPO COMÚN DE 0.60 M A 1.20 M DE DIÁMETRO, DE 1.51 A 1.75 M DE PROFUNDIDAD, A BASE DE MURO DE TABICÓN DE CEMENTO 10 X 14 X 28 CM (NOMINALES) DE 28 CM DE ESPESOR, JUNTEADO Y ASENTADO CON MORTERO CEMENTO-ARENA EN PROPORCIÓN 1:3, APLANADO ACABADO PULIDO CON MORTERO CEMENTO-CAL-ARENA 1:2:8, LOSA DE CONCRETO ARMADO F\'C=200 KG/CM2 DE 15 CM DE ESPESOR HECHO EN OBRA, ARMADA CON ACERO DEL No. 3 (3/8") A CADA 20 CM EN AMBOS SENTIDOS, PLANTILLA DE CONCRETO F\'C=100 KG/CM2 DE 5 CM DE ESPESOR, MESETA DE TABICÓN 10X14X28 CM ASENTADO CON MORTERO CEMENTO-ARENA 1:3 Y APLANADO CON MORTERO CEMENTO-CAL-ARENA 1:2:8, ACABADO PULIDO DE 1.5 CM EN LA PARTE SUPERIOR, FORMACIÓN DE MEDIA CAÑA DE CONCRETO F\'C=150 KG/CM2 ACABADO PULIDO, ESCALONES MARINOS DE POLIPROPILENO CON ALMA DE ACERO COLOCADO APARTIR DE LOS PRIMEROS 60 CM A CADA 40 CM DE SEPARACION. INCLUYE: MATERIALES, HERRAMIENTA, GANCHOS, ACARREOS, MANO DE OBRA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN. CUANTIFICAR APARTE EXCAVACIONES, RELLENOS, BROCAL Y TAPA.',um:'PZ',pu:15453.58,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06330132',desc:'BROCAL Y TAPA DE CONCRETO POLIMÉRICO PARA POZO DE VISITA ASENTADO CON MORTERO CEMENTO-ARENA EN PROPORCIÓN 1:3 DE 1.5 CM DE ESPESOR. INCLUYE: MATERIAL, TRASLADO A LA OBRA, ACARREOS, MANO DE OBRA Y HERRAMIENTA.',um:'JG',pu:5847.26,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06330200',desc:'ANILLO DE HULE DE JUNTA HERMÉTICA DE 12" PARA SELLAR TUBERÍA EN POZO DE VISITA SANITARIO. INCLUYE: MANO DE OBRA, MATERIALES, HERRAMIENTA Y TODO LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'PZ',pu:267.38,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-06340704',desc:'REGISTRO SANITARIO DE TRANSICIÓN DE 40X60 cm Y DE 91 A 110 cm DE PROFUNDIDAD (DIMENSIONES INTERIORES) CON MUROS DE TABICÓN DE 10X14X28 cm DE 14 cm DE ESPESOR, ASENTADO Y JUNTEADO CON MORTERO CEMENTO-ARENA EN PROPORCIÓN 1:3, APLANADO INTERIOR DE 1.5 cm DE ESPESOR CON MORTERO CEMENTO-ARENA EN PROPORCIÓN 1:3 ACABADO PULIDO, LOSA DE PISO DE 10 cm DE ESPESOR DE CONCRETO F\'C=200 kg/cm2 ARMADO CON VARILLA DEL No. 3 (3/8") A CADA 20 cm EN AMBOS SENTIDOS EN UN SOLO LECHO, FORMACIÓN DE MEDIA CAÑA DE CONCRETO F\'C=150 KG/CM2 ACABADO PULIDO, TAPA DE 10 cm DE ESPESOR DE CONCRETO DE F\'C=200 kg/cm2 ARMADA CON VARILLA DEL No. 3 (3/8") A CADA 10 cm EN AMBOS SENTIDOS, EN UN SOLO LECHO. INCLUYE: TRASLADO DE MATERIALES, HERRAMIENTA, MANO DE OBRA.',um:'PZ',pu:6002.55,cat:'POZOS Y REGISTROS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+
+  // ─── HIDRÁULICA ───
+  {clave:'HID-019',desc:'Bomba hidroneumática 1HP doméstica',um:'pza',pu:8500.00,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-020',desc:'Tinaco 1100 lts rotoplas c/acc y salidas',um:'pza',pu:2850.01,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-021',desc:'Cisterna concreto 5000 lts impermeabilizada',um:'pza',pu:12500.00,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-022',desc:'WC alargado blanco estándar + llave',um:'pza',pu:2850.01,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-023',desc:'WC corto blanco económico + llave',um:'pza',pu:1850.00,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-024',desc:'Lavabo de pedestal blanco + llave mezcladora',um:'pza',pu:2450.00,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-025',desc:'Lavabo empotrado en mueble + llave',um:'pza',pu:1850.00,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-026',desc:'Fregadero acero inox 2 tinas + llave',um:'pza',pu:3850.00,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-027',desc:'Regadera eléctrica 127V 4500W',um:'pza',pu:485.00,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-028',desc:'Calentador de paso gas 8 lts/min',um:'pza',pu:4850.00,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HID-029',desc:'Calentador solar 150 lts c/colectores',um:'pza',pu:12500.00,cat:'HIDRÁULICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HL-HID-001',desc:'Tubería PVC hidráulico 1/2" Ø roscable con conexiones, ahogada',um:'ml',pu:182.47,cat:'HIDRÁULICA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-HID-002',desc:'Tinaco Rotoplas 1100 L instalado en azotea, con conexiones',um:'pza',pu:6846.11,cat:'HIDRÁULICA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+
+  // ─── SANITARIA ───
+  {clave:'SAN-012',desc:'Pozo de visita tabique Ø1.20m h=1.50m',um:'pza',pu:4850.00,cat:'SANITARIA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'SAN-013',desc:'Registro sanitario 40×60cm tabique',um:'pza',pu:485.00,cat:'SANITARIA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'SAN-014',desc:'Fosa séptica prefabricada 1500 lts',um:'pza',pu:8500.00,cat:'SANITARIA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'SAN-015',desc:'Biodigestor Rotoplas 1300 lts c/acc',um:'pza',pu:9499.99,cat:'SANITARIA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'SAN-017',desc:'Mueble sanitario: WC + lavabo + accesorios',um:'jgo',pu:4850.00,cat:'SANITARIA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+
+  // ─── ELÉCTRICA ───
+  {clave:'ELE-001',desc:'Salida para contacto doble tipo dado c/tierra',um:'pza',pu:285.01,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-002',desc:'Salida para contacto triple tipo dado c/tierra',um:'pza',pu:347.99,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-003',desc:'Apagador sencillo tipo dado c/caja y placa',um:'pza',pu:185.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-004',desc:'Apagador doble tipo dado c/caja y placa',um:'pza',pu:248.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-005',desc:'Apagador de escalera 3 vías tipo dado',um:'pza',pu:285.01,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-006',desc:'Salida para lámpara plafón',um:'pza',pu:185.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-007',desc:'Salida para lámpara de pared',um:'pza',pu:148.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-008',desc:'Salida para ventilador de techo c/control',um:'pza',pu:285.01,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-016',desc:'Centro de carga 8 circuitos c/breakers',um:'pza',pu:2850.01,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-017',desc:'Centro de carga 12 circuitos c/breakers',um:'pza',pu:3850.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-018',desc:'Centro de carga 20 circuitos c/breakers',um:'pza',pu:5849.99,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-019',desc:'Tablero de distribución trifásico 60A',um:'pza',pu:4850.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-020',desc:'Acometida aérea desde medidor',um:'global',pu:4850.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-021',desc:'Tierra física electrodo copper weld 2.4m',um:'pza',pu:485.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-022',desc:'Luminaria LED panel 60×60 40W',um:'pza',pu:485.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-023',desc:'Luminaria LED downlight empotrable 9W',um:'pza',pu:285.01,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-024',desc:'Luminaria LED exterior tipo sardina 40W',um:'pza',pu:685.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-025',desc:'Luminaria LED para cancha 150W (4 por cancha)',um:'pza',pu:2850.01,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-026',desc:'Salida para aire acondicionado mini split',um:'pza',pu:485.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-027',desc:'Salida para bomba hidráulica',um:'pza',pu:385.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-028',desc:'Detector de humo 220V c/batería',um:'pza',pu:485.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-029',desc:'Salida de TV y datos RJ45 tipo dado',um:'pza',pu:285.01,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ELE-030',desc:'Sistema CCTV 4 cámaras HD c/DVR',um:'global',pu:8500.00,cat:'ELÉCTRICA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HL-ELE-001',desc:'Salida eléctrica para contacto, incluye cable THW #12, tubo conduit y caja',um:'salida',pu:1240.10,cat:'ELÉCTRICA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-ELE-002',desc:'Salida para apagador sencillo c/cable #14, tubo y caja',um:'salida',pu:941.77,cat:'ELÉCTRICA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-ELE-003',desc:'Centro de carga 4 polos + 2 interruptores termomagnéticos 20A',um:'jgo',pu:5069.67,cat:'ELÉCTRICA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+
+  // ─── INST. ESPECIALES ───
+  {clave:'ESP-003',desc:'Tanque estacionario LP 300 lts c/reg.',um:'pza',pu:8500.00,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ESP-004',desc:'Cisterna de agua pluvial 5000 lts',um:'pza',pu:14999.99,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ESP-005',desc:'Sistema de riego automático jardín',um:'m²',pu:185.00,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ESP-006',desc:'Aire acondicionado mini split 1.5 ton',um:'pza',pu:12500.00,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ESP-007',desc:'Aire acondicionado mini split 2 ton',um:'pza',pu:16500.00,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ESP-008',desc:'Sistema de alarma + contacto magnético',um:'global',pu:8500.00,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ESP-009',desc:'Portero eléctrico c/video 2 hilos',um:'pza',pu:4850.00,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ESP-010',desc:'Automatización portón corredizo',um:'pza',pu:8500.00,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ESP-011',desc:'Panel solar 300W policristalino',um:'pza',pu:2850.01,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ESP-013',desc:'Extractor de baño 110CFM',um:'pza',pu:685.00,cat:'INST. ESPECIALES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+
+  // ─── CARPINTERÍA ───
+  {clave:'CAR-001',desc:'Puerta de madera de pino 0.90×2.10m triplay',um:'pza',pu:3850.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-002',desc:'Puerta de madera de cedro 0.90×2.10m',um:'pza',pu:5849.99,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-003',desc:'Puerta tambor 0.90×2.10m melanina',um:'pza',pu:2850.01,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-004',desc:'Puerta de baño 0.75×2.05m MDF',um:'pza',pu:2450.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-005',desc:'Mocheta y chambranas de pino para puerta',um:'pza',pu:485.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-006',desc:'Closet de madera de pino 2.40×2.40m',um:'m²',pu:2850.01,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-007',desc:'Cocina integral piso a techo melanina 18mm',um:'ml',pu:4850.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-008',desc:'Mueble bajo de cocina melanina 18mm',um:'ml',pu:2450.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-009',desc:'Mueble alto de cocina melanina 18mm',um:'ml',pu:1850.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-010',desc:'Cubierta de cocina granito negro',um:'ml',pu:2850.01,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-011',desc:'Cubierta de cocina cuarzo blanco',um:'ml',pu:3850.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-012',desc:'Duela de madera para plafón',um:'m²',pu:485.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-013',desc:'Escalera de madera de pino macizo',um:'pza',pu:8500.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-014',desc:'Barandal de madera de cedro',um:'ml',pu:1850.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CAR-015',desc:'Ventana de madera de pino con mosquitero',um:'m²',pu:1850.00,cat:'CARPINTERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HL-CAR-001',desc:'Puerta tambor entrecallar con marco, chapa pomo y bisagras',um:'pza',pu:6569.33,cat:'CARPINTERÍA',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+
+  // ─── HERRERÍA ───
+  {clave:'HER-005',desc:'Cancel de aluminio nat. piso a techo c/vidrio',um:'m²',pu:1850.00,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-006',desc:'Cancel de aluminio para ducha 0.90×1.90m',um:'pza',pu:3850.00,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-009',desc:'Portón doble hoja herrería 3.00×2.10m',um:'pza',pu:8500.00,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-013',desc:'Puerta enrollable metálica lisa 3.00×2.40m',um:'pza',pu:12500.00,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-014',desc:'Malla ciclónica galvanizada cal.12 h=2m',um:'ml',pu:185.00,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-015',desc:'Concertina acero galvanizado Ø45cm doble',um:'ml',pu:194.99,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-016',desc:'Malla gallinera galv. 1.20m altura',um:'ml',pu:85.01,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-017',desc:'Vidrio claro 6mm en cancelería',um:'m²',pu:485.00,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-018',desc:'Vidrio templado 8mm en cancel',um:'m²',pu:784.99,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-019',desc:'Vidrio templado 10mm para cancha de pádel',um:'m²',pu:1850.00,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'HER-020',desc:'Silicón estructural para cancelería',um:'ml',pu:45.00,cat:'HERRERÍA',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+
+  // ─── ACABADOS ───
+  {clave:'ACA-001',desc:'Aplanado fino mortero cemento-arena 1:4 interior',um:'m²',pu:148.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-002',desc:'Aplanado grueso mortero 1:5 en muros interior',um:'m²',pu:118.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-003',desc:'Aplanado fino en plafón',um:'m²',pu:185.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-004',desc:'Yeso proyectado en muros interiores',um:'m²',pu:95.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-005',desc:'Pasta de yeso en muros interiores',um:'m²',pu:67.99,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-006',desc:'Pintura vinílica interior 2 manos',um:'m²',pu:58.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-007',desc:'Pintura esmalte interior 2 manos',um:'m²',pu:75.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-008',desc:'Pintura elastomérica 2 manos en muros',um:'m²',pu:85.01,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-012',desc:'Plafón de panel de PVC con estructura',um:'m²',pu:185.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-013',desc:'Cornisa de yeso moldeada 15cm',um:'ml',pu:95.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-014',desc:'Textura plástica tipo piel de naranja',um:'m²',pu:48.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-015',desc:'Pastilla de mosaico 2×2cm en muros',um:'m²',pu:485.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-016',desc:'Azulejo cerámico 20×30cm con adhesivo',um:'m²',pu:285.01,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-017',desc:'Azulejo cerámico 30×60cm con adhesivo blanco',um:'m²',pu:385.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-018',desc:'Azulejo porcelánico 30×60cm importado',um:'m²',pu:685.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-019',desc:'Junteado y boquillado de azulejo',um:'m²',pu:65.00,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACA-020',desc:'Rodapié de cerámica 10cm',um:'ml',pu:85.01,cat:'ACABADOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'FR-08500010',desc:'PINTURA VINIMEX COMEX EN MUROS, HASTA 3.00 m DE ALTURA. INCLUYE PREPARACIÓN DE LA SUPERFICIE, UNA MANO DE SELLADOR VINÍLICO, DOS MANOS DE PINTURA, HERRAMIENTA, ANDAMIOS Y MANO DE OBRA NECESARIA PARA SU COMPLETA EJECUCIÓN.',um:'M2',pu:202.21,cat:'ACABADOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'HL-ACA-001',desc:'Aplanado de mortero cemento-cal-arena 1:2:8 e=1.5 cm acabado fino',um:'m²',pu:352.57,cat:'ACABADOS',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-ACA-002',desc:'Aplanado de yeso e=1.5 cm en muro interior',um:'m²',pu:242.85,cat:'ACABADOS',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-ACA-003',desc:'Pintura vinílica Vinimex 2 manos s/sellador en interior',um:'m²',pu:198.50,cat:'ACABADOS',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-ACA-004',desc:'Esmalte 100 c/primer 1 mano + 2 esmalte sobre herrería',um:'m²',pu:271.43,cat:'ACABADOS',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+
+  // ─── ACABADOS EXTERIORES ───
+  {clave:'ACE-EXT-001',desc:'Aplanado exterior mortero 1:4 e=1.5cm',um:'m²',pu:168.00,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-002',desc:'Aplanado exterior con aditivo hidrófugo',um:'m²',pu:194.99,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-003',desc:'Pintura vinílica exterior 2 manos',um:'m²',pu:67.99,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-004',desc:'Pintura elastomérica exterior 2 manos',um:'m²',pu:95.00,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-005',desc:'Pintura base de caucho exterior',um:'m²',pu:85.01,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-006',desc:'Recubrimiento pétreo lavado + sellador',um:'m²',pu:148.00,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-007',desc:'Cantera gris rosada labrada en fachada',um:'m²',pu:1285.00,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-008',desc:'Piedra laja en muro exterior',um:'m²',pu:485.00,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-009',desc:'Loseta de barro rojo 25×25cm exterior',um:'m²',pu:285.01,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-010',desc:'Junteado de cantera con lechada de cemento',um:'ml',pu:48.00,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-011',desc:'Impermeabilizante en barda exterior',um:'m²',pu:85.01,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'ACE-EXT-012',desc:'Chaflán perimetral en azotea',um:'ml',pu:65.00,cat:'ACABADOS EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+
+  // ─── PISOS ───
+  {clave:'HL-PIS-001',desc:'Firme de concreto f\'c=150 e=10 cm armado con malla 6×6-10/10',um:'m²',pu:664.39,cat:'PISOS',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-PIS-002',desc:'Piso porcelanato 60×60 colocado con pegamento, junta perdida',um:'m²',pu:1198.30,cat:'PISOS',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-PIS-003',desc:'Recubrimiento azulejo blanco 30×30 colocado con pegamento',um:'m²',pu:906.35,cat:'PISOS',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'HL-PIS-004',desc:'Loseta de cantera 30×30 cm colocada',um:'m²',pu:1193.27,cat:'PISOS',estado:'AUDITADO',origen:'HL 2026 Auditado'},
+  {clave:'PIS-001',desc:'Piso loseta cerámica 30×30cm adhesivo+lechada',um:'m²',pu:285.01,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-002',desc:'Piso porcelanato 60×60cm adhesivo blanco',um:'m²',pu:485.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-003',desc:'Piso porcelanato 90×90cm adhesivo blanco',um:'m²',pu:685.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-004',desc:'Piso mármol travertino 40×40cm pulido',um:'m²',pu:985.01,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-005',desc:'Piso loseta de barro rojo 25×25cm',um:'m²',pu:285.01,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-009',desc:'Piso de pasto sintético para cancha',um:'m²',pu:485.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-010',desc:'Piso epóxico 2 capas antiderrapante',um:'m²',pu:285.01,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-011',desc:'Piso antiderrapante para canchas de pádel',um:'m²',pu:285.01,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-012',desc:'Zoclo de barro rojo 10cm',um:'ml',pu:65.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-013',desc:'Zoclo de porcelanato 10cm',um:'ml',pu:85.01,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-014',desc:'Escalón de concreto con prefabricado de piedra',um:'ml',pu:485.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-015',desc:'Piso de piedra bola en senderos',um:'m²',pu:347.99,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-016',desc:'Firme y enladrillado patio exterior',um:'m²',pu:185.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-017',desc:'Pasta autonivelante para pisos 3mm',um:'m²',pu:185.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-018',desc:'Junteado de pisos con junta epóxica',um:'m²',pu:75.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-019',desc:'Tapete de hule para jardín 2cm',um:'m²',pu:248.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'PIS-020',desc:'Piso vinílico autoadhesivo tipo madera',um:'m²',pu:185.00,cat:'PISOS',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+
+  // ─── PAVIMENTOS ───
+  {clave:'FR-04220012',desc:'GUARNICIÓN DE SECCIÓN TRAPEZOIDAL 15X20X30 CM DE CONCRETO F\'C=200 KG/CM2 T.M.A. 3/4" HECHO EN OBRA CON REVOLVEDORA. INCLUYE: SUMINISTRO DE LOS MATERIALES, ACARREOS, CIMBRA RÍGIDA, CIMBRADO, DESCIMBRADO, COLOCACIÓN DEL CONCRETO, VARILLADO, JUNTAS DE CONSTRUCCIÓN A CADA 3.00 M CON CELOTEX DE 1/2" DE ESPESOR, ACABADO DE ARISTAS CON VOLTEADOR, CURADO CON MEMBRANA, MANO DE OBRA, EQUIPO, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'ML',pu:519.28,cat:'PAVIMENTOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04220042',desc:'BANQUETA DE 10 CM DE ESPESOR DE CONCRETO F\'C=150 KG/CM2 T.M.A. 3/4" HECHO EN OBRA CON REVOLVEDORA, ACABADO ESCOBILLADO. INCLUYE: SUMINISTRO Y ACARREO DE LOS MATERIALES, CIMBRA RÍGIDA, CIMBRADO, DESCIMBRADO, JUNTAS DE CONSTRUCCIÓN A CADA 2.00 M,REMATE DE ARISTAS CON VOLTEADOR, CURADO CON MEMBRANA, MANO DE OBRA, EQUIPO, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M2',pu:636.91,cat:'PAVIMENTOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04224010',desc:'RAMPA DE CONCRETO ARMADO DE 10 CM DE ESPESOR. CONCRETO HIDRÁULICO F\'\'C=150 KG/CM2 T.M.A. 3/4" HECHO EN OBRA CON REVOLVEDORA; ARMADO CON MALLA ELECTROSOLDADA 6X6-10/10, ACABADO ESCOBILLADO. INCLUYE: SUMINISTRO Y ACARREO DE LOS MATERIALES, CIMBRA RÍGIDA, CIMBRADO, DESCIMBRADO, JUNTAS DE CONSTRUCCIÓN A CADA 2.00 M,REMATE DE ARISTAS CON VOLTEADOR, CURADO CON MEMBRANA, MANO DE OBRA, EQUIPO, HERRAMIENTA Y LO NECESARIO PARA SU COMPLETA EJECUCIÓN.',um:'M2',pu:681.90,cat:'PAVIMENTOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-04300061',desc:'PAVIMENTO DE CONCRETO HIDRÁULICO PREMEZCLADO DE 16 CM (±1.0 CM) DE ESPESOR, ACABADO ESTAMPADO, F¿C=400 KG/CM2, REVENIMIENTO 12 CM ±2.5 CM, T.M.A. 40 MM, RESISTENCIA RÁPIDA A 3 DÍAS, JUNTA LONGITUDINAL CON VARILLA CORRUGADA DE AMARRE DE 1/2\'\' DE DIÁMETRO POR 60 CM DE LONGITUD @65 CM FY=4200 KG/CM2, CORTE DE JUNTAS DE CONTRACCIÓN A 3.90 M MÁXIMO, 6 MM DE ANCHO, Y PROFUNDIDAD IGUAL A 1/3 DEL ESPESOR DE LA LOSA, SELLADO DE JUNTAS TRANSVERSALES Y LONGITUDINALES CON TIRILLAS DE RESPALDO DE POLIURETANO DE 1/4\'¿ DE DIÁMETRO (BACKER ROD) A UNA PROFUNDIDAD MÍNIMA DE 1.00 CM SOBRE EL LOMO Y RELLENA CON SELLADOR DE POLIURETANO AUTONIVELANTE SIKAFLEX -1CSL Y REFUERZO CON DOBLE MALLA ELECTROSOLDADA 6/6-10/10. INCLUYE: SUMINISTRO Y COLOCACIÓN DE LOS MATERIALES, PREPARACIÓN DE LA SUPERFICIE, CIMBRA METÁLICA, SILLETAS PARA MALLA ELECTROSOLDADA, VACIADO, EXTENDIDO, NIVELADO, VIBRADO, CURADO CON MEMBRANA, DESCIMBRADO, COLOR INTEGRAL SEGÚN PROYECTO, MOLDE MARCA ORMAQ MODELO MP-60, DESMOLDANTE, RETIRO DE MOLDES, APLICACIÓN DE SELLADOR ACRÍLICO DE CONCRETO, LAVADO DE PAVIMENTO CON HIDROLAVADORA, MUESTREADO, CORTE DE JUNTAS CON CORTADORA DE DISCO DE DIAMANTE, REMATE DE ARISTAS CON VOLTEADOR, MANO DE OBRA, HERRAMIENTA, EQUIPO Y TODO LO NECESARIO PARA SU CORRECTA Y COMPLETA EJECUCIÓN.',um:'M2',pu:2167.75,cat:'PAVIMENTOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+  {clave:'FR-08180151',desc:'DENTELLÓN DE 15X20 cm DE SECCIÓN DE CONCRETO HIDRÁULICO F\'C=200 kg/cm2 T.M.A. 3/4" HECHO EN OBRA CON REVOLVEDORA, REMATE DE ARISTAS CON VOLTEADOR. INCLUYE: SUMINISTRO DE MATERIALES, ACARREOS, CIMBRA, CIMBRADO, DESCIMBRADO, HECHURA DEL CONCRETO, CURADO CON MEMBRANA, EQUIPO, HERRAMIENTA, MANO DE OBRA Y TODO LO NECESARIO PARA SU CORRECTA EJECUCIÓN.',um:'ML',pu:453.53,cat:'PAVIMENTOS',estado:'VALIDADO',origen:'SOP/2025-0017'},
+
+  // ─── EXTERIORES ───
+  {clave:'EXT-001',desc:'Bardeo perimetral tabicón doble h=2.5m',um:'ml',pu:685.00,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-002',desc:'Muro de piedra bola h=2m',um:'ml',pu:885.00,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-003',desc:'Fosa de visita vehicular 60×90×80cm',um:'pza',pu:2850.01,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-004',desc:'Área verde con pasto kikuyo',um:'m²',pu:95.00,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-005',desc:'Árbol de 3m altura c/sembrado y riego',um:'pza',pu:1850.00,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-006',desc:'Jardinera de concreto 0.40m h×0.40m a',um:'ml',pu:485.00,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-008',desc:'Pérgola de madera de pino 3×3m',um:'pza',pu:8500.00,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-009',desc:'Pavimento de adoquín peatonal 10×20×6cm',um:'m²',pu:285.01,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-010',desc:'Andador de piedra bola 60cm ancho',um:'ml',pu:485.00,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-012',desc:'Sardinel de cantera 15cm h=20cm',um:'ml',pu:285.01,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'EXT-014',desc:'Poste de alumbrado galv. h=6m c/luminaria',um:'pza',pu:8500.00,cat:'EXTERIORES',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+
+  // ─── CANCHAS PÁDEL ───
+  {clave:'CP-001',desc:'Excavación y nivelación para cancha de pádel',um:'m²',pu:85.01,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-002',desc:'Base de tepetate compactado al 95% e=20cm',um:'m²',pu:145.00,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-004',desc:'Estructura tubular HSS perimetral cancha pádel',um:'kg',pu:72.01,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-005',desc:'Cristal templado 10mm para cancha de pádel',um:'m²',pu:1850.00,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-006',desc:'Malla de acero galv. para fondo y techo cancha',um:'m²',pu:485.00,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-007',desc:'Puerta de acceso cancha pádel 2 hojas alum.',um:'pza',pu:4850.00,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-008',desc:'Pintura epóxica antiderrapante piso cancha',um:'m²',pu:285.01,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-010',desc:'Red y postes para cancha de pádel',um:'cancha',pu:4850.00,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-011',desc:'Líneas de juego pintadas en piso',um:'cancha',pu:485.00,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-012',desc:'Numeración y señalética de cancha',um:'cancha',pu:285.01,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-013',desc:'Aro de servicios eléctricos en cancha',um:'cancha',pu:1850.00,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+  {clave:'CP-014',desc:'Impermeabilización de base de cancha',um:'m²',pu:185.00,cat:'CANCHAS PÁDEL',estado:'CONSERVADO',origen:'HL Catálogo 2025'},
+];
+
+let catFilterActive = '';
+
+function openApuCatalog(mode){
+  // mode: 'concepto' (fill APU header) or 'insumo' (add as row)
+  window._apuCatMode = mode || 'concepto';
+  document.getElementById('cat-search').value='';
+  catFilterActive='';
+  // Render category chips
+  const cats=[...new Set(HL_CATALOG.map(c=>c.cat))];
+  document.getElementById('cat-filter-chips').innerHTML=cats.map(c=>
+    `<button onclick="setCatFilter('${c}')" id="catf-${c.replace(/\s/g,'_')}" style="padding:5px 12px;border-radius:20px;font-size:10px;font-weight:700;border:1.5px solid var(--border);background:transparent;color:var(--muted);font-family:var(--font);cursor:pointer">${c}</button>`
+  ).join('');
+  renderCatalogModal();
+  document.getElementById('apuCatModal').classList.add('open');
+}
+
+function setCatFilter(cat){
+  catFilterActive=catFilterActive===cat?'':cat;
+  document.querySelectorAll('[id^="catf-"]').forEach(b=>{b.style.background='transparent';b.style.color='var(--muted)';b.style.borderColor='var(--border)';});
+  if(catFilterActive){
+    const btn=document.getElementById('catf-'+cat.replace(/\s/g,'_'));
+    if(btn){btn.style.background='rgba(0,212,255,.12)';btn.style.color='var(--accent)';btn.style.borderColor='var(--accent)';}
+  }
+  renderCatalogModal();
+}
+
+function renderCatalogModal(){
+  const q=(document.getElementById('cat-search').value||'').toLowerCase();
+  let items=HL_CATALOG;
+  if(catFilterActive) items=items.filter(c=>c.cat===catFilterActive);
+  if(q) items=items.filter(c=>c.desc.toLowerCase().includes(q)||c.clave.toLowerCase().includes(q)||c.um.toLowerCase().includes(q));
+  const list=document.getElementById('cat-modal-list');
+  list.innerHTML=items.slice(0,60).map(c=>`
+    <div class="cat-row" onclick="selectCatalogItem('${c.clave}')">
+      <span class="cat-clave">${c.clave}</span>
+      <span class="cat-desc" title="${c.desc}">${c.desc}</span>
+      <span class="cat-um">${c.um}</span>
+      ${c.pu?`<span class="cat-pu">${fmtFull(c.pu)}</span>`:''}
+    </div>`).join('');
+  if(!items.length) list.innerHTML='<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Sin resultados</div></div>';
+}
+
+function selectCatalogItem(clave){
+  const item=HL_CATALOG.find(c=>c.clave===clave); if(!item) return;
+  document.getElementById('apuCatModal').classList.remove('open');
+  if(window._apuCatMode==='insumo'){
+    apuRows.push({id:'row-'+Date.now(),tipo:'MAT',desc:item.desc,unidad:item.um,cant:0,pu:item.pu||0});
+    renderApuRows();recalcApu();
+    showToast('✅ Insumo agregado: '+item.desc.substring(0,30));
+  } else {
+    document.getElementById('apu-num').value=item.clave;
+    document.getElementById('apu-desc').value=item.desc;
+    document.getElementById('apu-unidad').value=item.um==='m³'?'m3':item.um==='m²'?'m2':item.um;
+    showToast('✅ Concepto cargado: '+item.clave);
+  }
 }
 
 // ── RESPALDO EMBEBIDO (2026-05-16 CORRECTO) ─────────────────────
