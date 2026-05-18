@@ -414,6 +414,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <div class="ins-tab active" onclick="setInsTab(this,'materiales')">🧱 Materiales</div>
     <div class="ins-tab" onclick="setInsTab(this,'electrico')">⚡ Eléctrico</div>
     <div class="ins-tab" onclick="setInsTab(this,'servicios')">🏗️ Servicios</div>
+    <div class="ins-tab" onclick="setInsTab(this,'conceptos')">🗂️ Conceptos</div>
     <div class="ins-tab" onclick="setInsTab(this,'proveedores')">🏢 Proveedores</div>
     <div class="ins-tab" onclick="setInsTab(this,'precios')">💰 Precios</div>
     <div class="ins-tab" onclick="setInsTab(this,'inventario')">📦 Inventario</div>
@@ -2346,6 +2347,7 @@ function renderInsumos(){
   if(insTab==='proveedores'){renderProveedores(container,search);return;}
   if(insTab==='precios'){renderPrecios(container,search);return;}
   if(insTab==='inventario'){renderInventario(container,search);return;}
+  if(insTab==='conceptos'){renderConceptos(container,search);return;}
   if(insView==='detail'&&insDetailKey){renderInsDetail(container,insDetailKey);return;}
   const insMap=buildInsumosMap();
   let entries=Object.values(insMap);
@@ -2376,6 +2378,101 @@ function renderInsDetail(container,key){
   entry.entries.forEach((e)=>{
     const el=document.createElement('div');el.className='ins-det-row';el.style.margin='0 16px 6px';el.onclick=()=>openDetail(e.txId);
     el.innerHTML=`<div style="width:32px;height:32px;border-radius:10px;background:rgba(0,212,255,.1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${ICONS[e.concepto]||'📦'}</div><div class="ins-det-info"><div class="ins-det-prov">${e.proveedor||'—'}</div><div class="ins-det-meta">${e.fecha||''} ${e.nota?'· '+e.nota:''}</div></div><div class="ins-det-amt">${fmtFull(e.monto)}</div>`;
+    container.appendChild(el);
+  });
+}
+
+function renderConceptos(container,search){
+  if(insView==='detail'&&insDetailKey){renderConceptoDetail(container,insDetailKey);return;}
+  const txs=state.transactions.filter(t=>t.obraId===activeProject);
+  // Agrupar por concepto
+  const map={};
+  txs.forEach(t=>{
+    const c=t.concepto||'SIN CONCEPTO';
+    if(!map[c])map[c]={concepto:c,total:0,count:0,ef:0,tr:0,tc:0,txs:[]};
+    map[c].total+=(t.monto||0);
+    map[c].count++;
+    if(t.metodo==='EFECTIVO')map[c].ef+=(t.monto||0);
+    else if(t.metodo==='TRANSFERENCIA')map[c].tr+=(t.monto||0);
+    else if(t.metodo==='TARJETA')map[c].tc+=(t.monto||0);
+    map[c].txs.push(t);
+  });
+  let entries=Object.values(map).sort((a,b)=>b.total-a.total);
+  if(search)entries=entries.filter(e=>e.concepto.toLowerCase().includes(search));
+  if(!entries.length){container.innerHTML='<div class="empty"><div class="empty-icon">🗂️</div><div class="empty-text">Sin registros en esta obra</div></div>';return;}
+  const grandTotal=entries.reduce((s,e)=>s+e.total,0);
+  const maxVal=entries[0].total;
+  // KPI header
+  const hdr=document.createElement('div');
+  hdr.style.cssText='margin:0 16px 14px;display:grid;grid-template-columns:1fr 1fr;gap:8px';
+  hdr.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px"><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Total Obra</div><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent2)">${fmtFull(grandTotal)}</div></div><div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px"><div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Conceptos</div><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent)">${entries.length}</div></div>`;
+  container.appendChild(hdr);
+  entries.forEach((e,i)=>{
+    const color=INS_COLORS[i%INS_COLORS.length];
+    const pct=(e.total/maxVal*100).toFixed(0);
+    const pctGrand=(e.total/grandTotal*100).toFixed(1);
+    const icon=ICONS[e.concepto]||'📦';
+    const el=document.createElement('div');el.className='ins-row';el.style.animationDelay=Math.min(i*0.03,0.25)+'s';
+    el.onclick=()=>{insDetailKey=e.concepto;insView='detail';document.getElementById('ins-back-btn').style.display='flex';renderInsumos();};
+    el.innerHTML=`
+      <div class="ins-row-top">
+        <div style="width:32px;height:32px;border-radius:10px;background:${color}22;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${icon}</div>
+        <div class="ins-name" style="margin-left:8px">${e.concepto}</div>
+        <div class="ins-total">${fmtFull(e.total)}</div>
+      </div>
+      <div style="margin:6px 0 6px 40px;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width .5s ease"></div>
+      </div>
+      <div class="ins-row-sub">
+        <span class="ins-pill hi">${e.count} registro${e.count>1?'s':''}</span>
+        <span class="ins-pill" style="color:${color}">${pctGrand}% del total</span>
+        ${e.ef?`<span class="ins-pill">💵 ${fmt(e.ef)}</span>`:''}
+        ${e.tr?`<span class="ins-pill">🏦 ${fmt(e.tr)}</span>`:''}
+        ${e.tc?`<span class="ins-pill">💳 ${fmt(e.tc)}</span>`:''}
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+function renderConceptoDetail(container,concepto){
+  const txs=state.transactions.filter(t=>t.obraId===activeProject&&t.concepto===concepto)
+    .sort((a,b)=>new Date(b.fecha||b.createdAt)-new Date(a.fecha||a.createdAt));
+  if(!txs.length){insBack();return;}
+  const total=txs.reduce((s,t)=>s+(t.monto||0),0);
+  const ef=txs.filter(t=>t.metodo==='EFECTIVO').reduce((s,t)=>s+(t.monto||0),0);
+  const tr=txs.filter(t=>t.metodo==='TRANSFERENCIA').reduce((s,t)=>s+(t.monto||0),0);
+  const tc=txs.filter(t=>t.metodo==='TARJETA').reduce((s,t)=>s+(t.monto||0),0);
+  const icon=ICONS[concepto]||'📦';
+  // Header KPI
+  const kpi=document.createElement('div');
+  kpi.style.cssText='margin:0 16px 14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px';
+  kpi.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,212,255,.1);display:flex;align-items:center;justify-content:center;font-size:22px">${icon}</div>
+      <div><div style="font-size:15px;font-weight:800">${concepto}</div><div style="font-size:11px;color:var(--muted)">${txs.length} registro${txs.length>1?'s':''}</div></div>
+    </div>
+    <div style="font-family:var(--mono);font-size:28px;font-weight:700;color:var(--accent2);margin-bottom:14px">${fmtFull(total)}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      ${ef?`<div style="background:var(--surface2);border-radius:10px;padding:8px 10px"><div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:3px">EFECTIVO</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent2)">${fmt(ef)}</div></div>`:''}
+      ${tr?`<div style="background:var(--surface2);border-radius:10px;padding:8px 10px"><div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:3px">TRANSF.</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent)">${fmt(tr)}</div></div>`:''}
+      ${tc?`<div style="background:var(--surface2);border-radius:10px;padding:8px 10px"><div style="font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:3px">TARJETA</div><div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green)">${fmt(tc)}</div></div>`:''}
+    </div>`;
+  container.appendChild(kpi);
+  const lbl=document.createElement('div');
+  lbl.style.cssText='padding:4px 16px 8px;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:700';
+  lbl.textContent='Registros — más recientes primero';
+  container.appendChild(lbl);
+  txs.forEach(t=>{
+    const el=document.createElement('div');el.className='ins-det-row';el.style.margin='0 16px 6px';el.onclick=()=>openDetail(t.id);
+    const qChip=t.cantidad!=null?`<span style="font-size:9px;background:rgba(0,212,255,.08);color:var(--muted);padding:1px 5px;border-radius:4px;font-family:var(--mono)">${t.cantidad} ${t.unidad||''}</span> `:'';
+    const badge=t.metodo==='EFECTIVO'?'💵':t.metodo==='TARJETA'?'💳':'🏦';
+    el.innerHTML=`
+      <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,212,255,.08);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${icon}</div>
+      <div class="ins-det-info">
+        <div class="ins-det-prov" style="font-size:12px;white-space:normal;line-height:1.3">${t.descripcion||'—'}</div>
+        <div class="ins-det-meta">${badge} ${t.proveedor||''} ${t.fecha?'· '+t.fecha:''} ${qChip}${t.folio?'· '+t.folio:''}</div>
+      </div>
+      <div class="ins-det-amt">${fmtFull(t.monto)}</div>`;
     container.appendChild(el);
   });
 }
