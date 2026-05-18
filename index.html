@@ -160,6 +160,21 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .detail-concept-badge{display:block;width:fit-content;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.25);margin:0 auto 16px}
 .detail-del-btn{width:100%;padding:13px;border-radius:12px;border:1.5px solid rgba(255,68,68,.3);background:rgba(255,68,68,.08);color:var(--red);font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;margin-top:8px;transition:all .2s}
 .uuid-chip{font-family:var(--mono);font-size:9px;color:var(--muted);background:var(--surface3);border-radius:6px;padding:4px 8px;word-break:break-all;line-height:1.5}
+/* CANTIDAD / PRECIO UNITARIO */
+.qty-block{background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;transition:border-color .2s}
+.qty-block.active{border-color:rgba(0,212,255,.4)}
+.qty-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:end}
+.qty-eq{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(0,212,255,.06);border-radius:10px;border:1px solid rgba(0,212,255,.15)}
+.qty-eq-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600}
+.qty-eq-val{font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent);letter-spacing:-1px}
+.qty-eq-formula{font-size:10px;color:var(--muted);font-family:var(--mono);opacity:.7}
+.qty-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;padding:4px 0}
+.qty-toggle-dot{width:36px;height:20px;border-radius:10px;background:var(--surface3);border:1.5px solid var(--border);position:relative;transition:all .25s;flex-shrink:0}
+.qty-toggle-dot::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--muted);transition:all .25s}
+.qty-toggle.on .qty-toggle-dot{background:rgba(0,212,255,.2);border-color:var(--accent)}
+.qty-toggle.on .qty-toggle-dot::after{background:var(--accent);transform:translateX(16px)}
+.qty-toggle-label{font-size:12px;color:var(--muted);font-weight:600}
+.qty-toggle.on .qty-toggle-label{color:var(--accent)}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
 .stat-number{font-family:var(--mono);font-size:22px;font-weight:700}
@@ -814,6 +829,56 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
         </div>
       </div>
       <div class="form-group"><label class="form-label">Monto (MXN)</label><input class="form-input amount-input" id="f-monto" type="number" inputmode="decimal" placeholder="0.00" step="0.01"></div>
+      <!-- CANTIDAD / PRECIO UNITARIO -->
+      <div>
+        <div class="qty-toggle" id="qtyToggle" onclick="toggleQty()">
+          <div class="qty-toggle-dot"></div>
+          <span class="qty-toggle-label">Calcular por Cantidad × P.U.</span>
+        </div>
+        <div id="qtyBlock" style="display:none;margin-top:10px">
+          <div class="qty-block" id="qtyBlockInner">
+            <div class="qty-row">
+              <div class="form-group">
+                <label class="form-label">Cantidad</label>
+                <input class="form-input" id="f-cantidad" type="number" inputmode="decimal" placeholder="0" step="any" min="0" oninput="calcMonto()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Unidad</label>
+                <select class="form-select" id="f-unidad" onchange="calcMonto()">
+                  <option value="pza">pza</option>
+                  <option value="bulto">bulto</option>
+                  <option value="kg">kg</option>
+                  <option value="ton">ton</option>
+                  <option value="m">m</option>
+                  <option value="m²">m²</option>
+                  <option value="m³">m³</option>
+                  <option value="l">l</option>
+                  <option value="día">día</option>
+                  <option value="hr">hr</option>
+                  <option value="jor">jor</option>
+                  <option value="viaje">viaje</option>
+                  <option value="servicio">servicio</option>
+                  <option value="rollo">rollo</option>
+                  <option value="costal">costal</option>
+                  <option value="tramo">tramo</option>
+                  <option value="global">global</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Precio Unit.</label>
+                <input class="form-input" id="f-pu" type="number" inputmode="decimal" placeholder="0.00" step="0.01" min="0" style="font-family:var(--mono)" oninput="calcMonto()">
+              </div>
+            </div>
+            <div class="qty-eq">
+              <div>
+                <div class="qty-eq-label">Total calculado</div>
+                <div class="qty-eq-formula" id="qtyFormula">— × — = </div>
+              </div>
+              <div class="qty-eq-val" id="qtyTotal">$0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
       <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="f-desc" type="text" placeholder="¿Qué se compró?" autocomplete="off"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Proveedor</label>
@@ -1393,11 +1458,12 @@ function makeTxItem(t,i){
   const icon=ICONS[t.concepto]||'📦',bg=BGMAP[t.concepto]||'rgba(100,116,139,.15)';
   const fp=t.folio?`<span style="font-size:9px;background:rgba(0,212,255,.1);color:var(--accent);padding:1px 6px;border-radius:4px;font-family:var(--mono)">${t.folio}</span>`:'';
   const ap=t.scanned?'<span class="tx-badge badge-ai">✨IA</span>':'';
+  const qp=t.cantidad!=null?`<span style="font-size:9px;background:rgba(0,212,255,.08);color:var(--muted);padding:1px 6px;border-radius:4px;font-family:var(--mono)">${t.cantidad} ${t.unidad||''}</span>`:'';
   const esIngreso=t.tipo==='INGRESO';
   const amtColor=esIngreso?'style="color:var(--green)"':t.monto<0?'style="color:var(--red)"':'';
   const ingBadge=esIngreso?'<span class="ingreso-badge">📥 INGRESO</span>':'';
   el.onclick=()=>openDetail(t.id);
-  el.innerHTML=`<div class="tx-icon" style="background:${esIngreso?'rgba(0,230,118,.15)':bg}">${esIngreso?'📥':icon}</div><div class="tx-info"><div class="tx-desc">${t.descripcion||'—'}</div><div class="tx-meta">${getBadge(t.metodo)}${ap}${ingBadge}<span>${t.proveedor||''}</span>${fp}<span>${t.fecha||''}</span></div></div><div class="tx-amount" ${amtColor}>${esIngreso?'+':''}${fmtFull(t.monto)}</div>`;
+  el.innerHTML=`<div class="tx-icon" style="background:${esIngreso?'rgba(0,230,118,.15)':bg}">${esIngreso?'📥':icon}</div><div class="tx-info"><div class="tx-desc">${t.descripcion||'—'}</div><div class="tx-meta">${getBadge(t.metodo)}${ap}${ingBadge}${qp}<span>${t.proveedor||''}</span>${fp}<span>${t.fecha||''}</span></div></div><div class="tx-amount" ${amtColor}>${esIngreso?'+':''}${fmtFull(t.monto)}</div>`;
   return el;
 }
 
@@ -1443,6 +1509,7 @@ function openDetail(id){
     <div class="detail-section"><div class="detail-section-title">📋 Detalle del Gasto</div>
       <div class="detail-row"><span class="detail-key">Descripción</span><span class="detail-val">${t.descripcion||'—'}</span></div>
       <div class="detail-row"><span class="detail-key">Proveedor</span><span class="detail-val">${t.proveedor||'—'}</span></div>
+      ${t.cantidad!=null?`<div class="detail-row"><span class="detail-key">Cantidad</span><span class="detail-val mono" style="color:var(--accent)">${t.cantidad} ${t.unidad||''}</span></div><div class="detail-row"><span class="detail-key">Precio Unitario</span><span class="detail-val mono">${fmtFull(t.precioUnitario||0)}</span></div>`:''}
       <div class="detail-row"><span class="detail-key">Fecha</span><span class="detail-val">${t.fecha||'—'}</span></div>
       <div class="detail-row"><span class="detail-key">Método de Pago</span><span class="detail-val">${getBadge(t.metodo)} ${t.metodo||'—'}</span></div>
       <div class="detail-row"><span class="detail-key">Obra</span><span class="detail-val green">${proj?.name||t.obraId||'—'}</span></div>
@@ -1722,7 +1789,7 @@ function updateExportLabels(){const p=state.projects.find(p=>p.id===activeProjec
 function exportExcel(mode){
   const wb=XLSX.utils.book_new();
   let txs=state.transactions;if(mode==='project')txs=txs.filter(t=>t.obraId===activeProject);
-  const rows=txs.map(t=>({'FECHA':t.fecha||'','DESCRIPCION':t.descripcion||'','PROVEEDOR':t.proveedor||'','RFC':t.rfcProveedor||'','CONCEPTO':t.concepto||'','SUBTOTAL':t.subtotal||'','IVA':t.iva||'','TOTAL':t.monto||0,'METODO':t.metodo||'','FOLIO':t.folio||'','UUID':t.uuid||'','OBRA':state.projects.find(p=>p.id===t.obraId)?.name||t.obraId||'','NOTA':t.nota||'','SEMANA':t.fecha?getWL(t.fecha):'','IA':t.scanned?'SÍ':'NO'}));
+  const rows=txs.map(t=>({'FECHA':t.fecha||'','DESCRIPCION':t.descripcion||'','PROVEEDOR':t.proveedor||'','RFC':t.rfcProveedor||'','CONCEPTO':t.concepto||'','CANTIDAD':t.cantidad||'','UNIDAD':t.unidad||'','P.UNITARIO':t.precioUnitario||'','SUBTOTAL':t.subtotal||'','IVA':t.iva||'','TOTAL':t.monto||0,'METODO':t.metodo||'','FOLIO':t.folio||'','UUID':t.uuid||'','OBRA':state.projects.find(p=>p.id===t.obraId)?.name||t.obraId||'','NOTA':t.nota||'','SEMANA':t.fecha?getWL(t.fecha):'','IA':t.scanned?'SÍ':'NO'}));
   const ws=XLSX.utils.json_to_sheet(rows);XLSX.utils.book_append_sheet(wb,ws,'GASTOS');
   if(mode!=='weekly'){
     const cm={};txs.forEach(t=>{cm[t.concepto]=(cm[t.concepto]||0)+(t.monto||0);});
@@ -1766,13 +1833,25 @@ function openNewTx(pre){
     document.getElementById('f-concepto').value=pre.concepto||'MATERIALES';
     if(pre.obraId)document.getElementById('f-obra').value=pre.obraId;
     setMethod(pre.metodo||'EFECTIVO');
+    // Cantidad / P.U.
+    if(pre.cantidad){
+      document.getElementById('f-cantidad').value=pre.cantidad;
+      document.getElementById('f-pu').value=pre.precioUnitario||'';
+      if(pre.unidad)document.getElementById('f-unidad').value=pre.unidad;
+      if(!qtyActive)toggleQty(); else calcMonto();
+    } else {
+      document.getElementById('f-cantidad').value='';
+      document.getElementById('f-pu').value='';
+      if(qtyActive)toggleQty();
+    }
   }else{
     document.getElementById('newTxTitle').innerHTML='Nuevo <span>Gasto</span>';
     document.getElementById('saveTxBtn').textContent='REGISTRAR GASTO';
-    ['f-monto','f-desc','f-prov','f-nota','f-folio','f-rfc','f-subtotal','f-iva','f-uuid'].forEach(i=>document.getElementById(i).value='');
+    ['f-monto','f-desc','f-prov','f-nota','f-folio','f-rfc','f-subtotal','f-iva','f-uuid','f-cantidad','f-pu'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('f-fecha').value=today();
     setMethod('EFECTIVO');
     setTipo('GASTO');
+    if(qtyActive)toggleQty();
   }
   document.getElementById('newTxModal').classList.add('open');
   setTimeout(()=>document.getElementById('f-monto').focus(),300);
@@ -1790,6 +1869,9 @@ async function saveTx(){
   const montoFinal=Math.abs(monto);
   const sub=parseFloat(document.getElementById('f-subtotal').value)||null;
   const iva=parseFloat(document.getElementById('f-iva').value)||null;
+  const cant=qtyActive?(parseFloat(document.getElementById('f-cantidad').value)||null):null;
+  const pu=qtyActive?(parseFloat(document.getElementById('f-pu').value)||null):null;
+  const unidad=qtyActive?document.getElementById('f-unidad').value:null;
   const fields={
     monto:montoFinal,
     tipo:activeTipo,
@@ -1803,7 +1885,8 @@ async function saveTx(){
     folio:document.getElementById('f-folio').value.trim(),
     rfcProveedor:document.getElementById('f-rfc').value.trim().toUpperCase(),
     subtotal:sub,iva,
-    uuid:document.getElementById('f-uuid').value.trim().toUpperCase()
+    uuid:document.getElementById('f-uuid').value.trim().toUpperCase(),
+    cantidad:cant,unidad,precioUnitario:pu
   };
   if(editingTxId){
     const idx=state.transactions.findIndex(t=>t.id===editingTxId);
@@ -1816,6 +1899,25 @@ async function saveTx(){
   await saveState();document.getElementById('newTxModal').classList.remove('open');renderDash();renderList();
 }
 function shakeInput(id){const el=document.getElementById(id);el.style.borderColor='var(--red)';el.style.animation='none';el.offsetHeight;el.style.animation='shake .3s ease';setTimeout(()=>{el.style.borderColor='';el.style.animation='';},600);}
+
+// ── CANTIDAD / PRECIO UNITARIO ──────────────────────────────
+let qtyActive=false;
+function toggleQty(){
+  qtyActive=!qtyActive;
+  document.getElementById('qtyToggle').classList.toggle('on',qtyActive);
+  document.getElementById('qtyBlock').style.display=qtyActive?'block':'none';
+  document.getElementById('qtyBlockInner').classList.toggle('active',qtyActive);
+  if(qtyActive) calcMonto();
+}
+function calcMonto(){
+  const cant=parseFloat(document.getElementById('f-cantidad').value)||0;
+  const pu=parseFloat(document.getElementById('f-pu').value)||0;
+  const unidad=document.getElementById('f-unidad').value||'pza';
+  const total=cant*pu;
+  document.getElementById('qtyFormula').textContent=cant+' '+unidad+' × $'+pu.toFixed(2)+' = ';
+  document.getElementById('qtyTotal').textContent=fmtFull(total);
+  document.getElementById('f-monto').value=total>0?total.toFixed(2):'';
+}
 function openAddProject(){document.getElementById('p-name').value='';document.getElementById('p-loc').value='';document.getElementById('projModal').classList.add('open');setTimeout(()=>document.getElementById('p-name').focus(),300);}
 
 function openDelProject(id){
