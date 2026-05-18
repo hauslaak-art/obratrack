@@ -462,13 +462,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
   <div class="topbar">
     <div><div class="topbar-brand">Presupuesto</div><div class="topbar-sub" id="presup-subtitle">vs Real</div></div>
     <div class="topbar-right">
-      <div class="icon-btn" onclick="openEditPresupuesto()">✏️</div>
+      <div class="icon-btn" onclick="openImportPresupuesto()" title="Importar desde catálogo">📥</div>
+      <div class="icon-btn" onclick="openEditPresupuesto()" title="Editar manualmente">✏️</div>
     </div>
+  </div>
+  <div class="ins-tab-bar" id="presupTabBar">
+    <div class="ins-tab active" onclick="setPresupTab(this,'concepto')">📊 Por Concepto</div>
+    <div class="ins-tab" onclick="setPresupTab(this,'partidas')">📋 Partidas Detalladas</div>
+    <div class="ins-tab" onclick="setPresupTab(this,'resumen')">📈 Resumen</div>
   </div>
   <div class="scroll">
     <div id="presup-kpis" style="padding:14px 16px 0;display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
-    <div class="sec-header" style="padding-top:16px"><span class="sec-title">Por Concepto</span></div>
-    <div id="presup-list" style="padding:0 16px;display:flex;flex-direction:column;gap:8px"></div>
+    <div id="presup-panel-concepto">
+      <div class="sec-header" style="padding-top:16px"><span class="sec-title">Por Concepto</span></div>
+      <div id="presup-list" style="padding:0 16px;display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div id="presup-panel-partidas" style="display:none">
+      <div class="sec-header" style="padding-top:16px"><span class="sec-title">Partidas del Presupuesto</span><span class="sec-action" onclick="openImportPresupuesto()">＋ Importar</span></div>
+      <div id="presup-partidas-list" style="padding:0 16px;display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+    <div id="presup-panel-resumen" style="display:none">
+      <div id="presup-resumen-content" style="padding:14px 16px"></div>
+    </div>
     <div style="height:20px"></div>
   </div>
 </div>
@@ -723,6 +738,68 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <input type="file" id="cam-input" accept="image/*" capture="environment" class="input-hidden" onchange="handleFile(event)">
 <input type="file" id="file-input" accept="image/*,.pdf,application/pdf" class="input-hidden" onchange="handleFile(event)">
 
+<!-- NUEVO PROVEEDOR MODAL -->
+<div class="modal-overlay" id="nuevoProvModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-height:88dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Nuevo <span>Proveedor</span></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nombre / Razón Social *</label>
+        <input class="form-input" id="np-nombre" placeholder="Ej: Ferretería El Rocío" autocomplete="off">
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">RFC</label>
+          <input class="form-input" id="np-rfc" placeholder="ABC123456XYZ" style="text-transform:uppercase" autocomplete="off">
+        </div>
+        <div class="form-group"><label class="form-label">Régimen Fiscal</label>
+          <select class="form-select" id="np-regimen">
+            <option value="">— Seleccionar —</option>
+            <option value="601">601 — General Personas Morales</option>
+            <option value="603">603 — Personas Morales con Fines no Lucrativos</option>
+            <option value="605">605 — Sueldos y Salarios</option>
+            <option value="606">606 — Arrendamiento</option>
+            <option value="612">612 — Personas Físicas con Actividades Empresariales</option>
+            <option value="621">621 — Incorporación Fiscal</option>
+            <option value="626">626 — Régimen Simplificado de Confianza</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Categoría</label>
+          <select class="form-select" id="np-categoria">
+            <option value="MATERIALES">Materiales de Construcción</option>
+            <option value="HERRAMIENTA">Herramienta y Renta</option>
+            <option value="ELECTRICO">Eléctrico</option>
+            <option value="PLOMERIA">Plomería / Hidráulica</option>
+            <option value="ESTRUCTURA">Estructura / Acero</option>
+            <option value="SERVICIOS">Servicios Profesionales</option>
+            <option value="ACABADOS">Acabados</option>
+            <option value="MAQUINARIA">Maquinaria</option>
+            <option value="ADMINISTRATIVO">Administrativo / Fianzas</option>
+            <option value="OTRO">Otro</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Teléfono</label>
+          <input class="form-input" id="np-tel" placeholder="442 123 4567" inputmode="tel" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Correo electrónico</label>
+        <input class="form-input" id="np-email" placeholder="contacto@proveedor.com" type="email" autocomplete="off">
+      </div>
+      <div class="form-group"><label class="form-label">Contacto / Vendedor</label>
+        <input class="form-input" id="np-contacto" placeholder="Nombre del contacto" autocomplete="off">
+      </div>
+      <div class="form-group"><label class="form-label">Dirección / Sucursal</label>
+        <input class="form-input" id="np-direccion" placeholder="Ej: Av. Universidad 100, Querétaro" autocomplete="off">
+      </div>
+      <div class="form-group"><label class="form-label">Notas</label>
+        <textarea class="form-input" id="np-notas" placeholder="Días de crédito, formas de pago, observaciones..." rows="2" style="resize:vertical;min-height:54px;font-family:var(--font);line-height:1.45"></textarea>
+      </div>
+      <button class="submit-btn" onclick="saveNuevoProveedor()">GUARDAR PROVEEDOR</button>
+    </div>
+  </div>
+</div>
+
 <!-- NEW TX MODAL -->
 <div class="modal-overlay" id="newTxModal" onclick="closeOnBg(event,'newTxModal')">
   <div class="modal" style="max-height:90dvh;overflow-y:auto">
@@ -739,7 +816,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
       <div class="form-group"><label class="form-label">Monto (MXN)</label><input class="form-input amount-input" id="f-monto" type="number" inputmode="decimal" placeholder="0.00" step="0.01"></div>
       <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="f-desc" type="text" placeholder="¿Qué se compró?" autocomplete="off"></div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Proveedor</label><input class="form-input" id="f-prov" type="text" placeholder="Nombre" list="prov-dl" autocomplete="off"><datalist id="prov-dl"></datalist></div>
+        <div class="form-group"><label class="form-label">Proveedor</label>
+          <div style="display:flex;gap:6px;align-items:stretch">
+            <input class="form-input" id="f-prov" type="text" placeholder="Nombre" list="prov-dl" autocomplete="off" style="flex:1" onchange="checkProveedorExists()">
+            <button type="button" onclick="openNuevoProveedor()" title="Registrar nuevo proveedor" style="flex:0 0 auto;width:46px;border-radius:12px;border:1.5px solid var(--accent);background:rgba(0,212,255,.1);color:var(--accent);font-size:18px;font-weight:700;cursor:pointer;font-family:var(--font)">＋</button>
+          </div>
+          <datalist id="prov-dl"></datalist>
+        </div>
         <div class="form-group"><label class="form-label">Concepto</label>
           <select class="form-select" id="f-concepto" onchange="checkConceptoOtro()">
             <option value="CIMENTACION">Cimentación</option><option value="MANO DE OBRA">Mano de Obra</option>
@@ -871,6 +954,47 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6">Ingresa el monto presupuestado para cada concepto. La app comparará contra los gastos reales.</div>
     <div id="presup-edit-rows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
     <button class="submit-btn" onclick="savePresupuesto()">💾 Guardar Presupuesto</button>
+  </div>
+</div>
+
+<!-- IMPORTAR PRESUPUESTO DESDE CATÁLOGO/APUs -->
+<div class="modal-overlay" id="importPresupModal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal" style="max-height:90dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Importar <span>Partidas</span></div>
+
+    <div class="ins-tab-bar" style="margin-bottom:14px">
+      <div class="ins-tab active" id="imp-tab-cat" onclick="setImportTab('cat')">📚 Desde Catálogo</div>
+      <div class="ins-tab" id="imp-tab-apu" onclick="setImportTab('apu')">🧮 APUs guardados</div>
+    </div>
+
+    <!-- Tab Catálogo -->
+    <div id="imp-panel-cat">
+      <div class="form-group" style="margin-bottom:10px"><label class="form-label">Selecciona catálogo</label>
+        <select class="form-select" id="imp-cat-select" onchange="renderImpCatApus()">
+          <option value="">— Selecciona un catálogo —</option>
+        </select>
+      </div>
+      <div id="imp-cat-apus-wrap" style="display:none">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Marca los APUs a importar y captura la cantidad de obra para cada uno:</div>
+        <div id="imp-cat-apus-list" style="display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow-y:auto;margin-bottom:14px"></div>
+      </div>
+      <div id="imp-cat-empty" style="display:none" class="empty"><div class="empty-icon">📚</div><div class="empty-text">No tienes catálogos creados.<br>Crea uno en APU → Catálogos.</div></div>
+    </div>
+
+    <!-- Tab APUs sueltos -->
+    <div id="imp-panel-apu" style="display:none">
+      <div class="form-group" style="margin-bottom:10px"><label class="form-label">Buscar APU guardado</label>
+        <input class="form-input" id="imp-apu-search" placeholder="Buscar por clave o descripción..." oninput="renderImpApusList()">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Selecciona uno o varios APUs y captura la cantidad de obra:</div>
+      <div id="imp-apus-list" style="display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow-y:auto;margin-bottom:14px"></div>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="submit-btn" onclick="confirmImportPresupuesto()" style="flex:1">IMPORTAR SELECCIONADOS</button>
+      <button onclick="document.getElementById('importPresupModal').classList.remove('open')" style="padding:14px 18px;border-radius:14px;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-family:var(--font);cursor:pointer">Cancelar</button>
+    </div>
   </div>
 </div>
 
@@ -1222,7 +1346,7 @@ function renderDash(){
   saldoEl.style.color=saldo>=0?'var(--green)':'var(--red)';
   document.getElementById('kpi-week').textContent=fmt(wt.reduce((s,t)=>s+t.monto,0));
   document.getElementById('kpi-weekcount').textContent=wt.length+' mov.';
-  renderMiniChart(txs);renderConceptBars(txs,'conceptList',5);renderRecent(txs);
+  renderMiniChart(gastos);renderConceptBars(gastos,'conceptList',5);renderRecent(txs);
 }
 
 function renderMiniChart(txs){
@@ -1356,15 +1480,43 @@ function renderStats(){
   document.getElementById('stats-subtitle').textContent=proj?proj.name:'Haus Laak';
   if(statsTab==='meses'){renderMeses();return;}
   if(statsTab==='fechas'){renderFechas();return;}
-  const txs=state.transactions.filter(t=>t.obraId===activeProject);
-  const total=txs.reduce((s,t)=>s+(t.monto||0),0);
-  const ef=txs.filter(t=>t.metodo==='EFECTIVO').reduce((s,t)=>s+t.monto,0);
-  const tr=txs.filter(t=>t.metodo==='TRANSFERENCIA').reduce((s,t)=>s+t.monto,0);
-  const tc=txs.filter(t=>t.metodo==='TARJETA').reduce((s,t)=>s+t.monto,0);
-  document.getElementById('statsGrid').innerHTML=`<div class="stat-card"><div class="stat-number" style="color:var(--accent)">${fmtFull(total)}</div><div class="stat-label">Total Acumulado</div></div><div class="stat-card"><div class="stat-number" style="color:var(--accent2)">${txs.length}</div><div class="stat-label">Transacciones</div></div><div class="stat-card"><div class="stat-number" style="color:var(--green)">${fmtFull(ef)}</div><div class="stat-label">Efectivo</div></div><div class="stat-card"><div class="stat-number" style="color:var(--amber)">${fmtFull(tr)}</div><div class="stat-label">Transferencia</div></div><div class="stat-card"><div class="stat-number" style="color:var(--accent)">${fmtFull(tc)}</div><div class="stat-label">Tarjeta</div></div><div class="stat-card"><div class="stat-number" style="color:var(--muted)">${txs.length?fmtFull(total/txs.length):'$0'}</div><div class="stat-label">Promedio / Gasto</div></div>`;
-  const pm={};txs.forEach(t=>{pm[t.proveedor||'Sin proveedor']=(pm[t.proveedor||'Sin proveedor']||0)+t.monto;});
+  const all=state.transactions.filter(t=>t.obraId===activeProject);
+  const egresos=all.filter(t=>t.tipo!=='INGRESO');
+  const ingresos=all.filter(t=>t.tipo==='INGRESO');
+  // Egresos por método
+  const egEf=egresos.filter(t=>t.metodo==='EFECTIVO').reduce((s,t)=>s+(t.monto||0),0);
+  const egTr=egresos.filter(t=>t.metodo==='TRANSFERENCIA').reduce((s,t)=>s+(t.monto||0),0);
+  const egTc=egresos.filter(t=>t.metodo==='TARJETA').reduce((s,t)=>s+(t.monto||0),0);
+  // Ingresos por método
+  const inEf=ingresos.filter(t=>t.metodo==='EFECTIVO').reduce((s,t)=>s+(t.monto||0),0);
+  const inTr=ingresos.filter(t=>t.metodo==='TRANSFERENCIA').reduce((s,t)=>s+(t.monto||0),0);
+  const inTc=ingresos.filter(t=>t.metodo==='TARJETA').reduce((s,t)=>s+(t.monto||0),0);
+  const totalEg=egresos.reduce((s,t)=>s+(t.monto||0),0);
+  const totalIn=ingresos.reduce((s,t)=>s+(t.monto||0),0);
+  const balance=totalIn-totalEg;
+  const balanceColor=balance>=0?'var(--green)':'var(--red)';
+  const promEg=egresos.length?totalEg/egresos.length:0;
+
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="stat-card"><div class="stat-number" style="color:var(--accent2)">${fmtFull(totalEg)}</div><div class="stat-label">Total Egresos · ${egresos.length}</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:var(--green)">${fmtFull(totalIn)}</div><div class="stat-label">Total Ingresos · ${ingresos.length}</div></div>
+    <div class="stat-card" style="grid-column:1/-1;border-left:3px solid ${balanceColor}"><div class="stat-number" style="color:${balanceColor}">${balance>=0?'+':''}${fmtFull(balance)}</div><div class="stat-label">Balance (Ingresos − Egresos)</div></div>
+    <div class="stat-card" style="grid-column:1/-1;background:transparent;border:none;padding:0;text-align:left"><div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px">Egresos por método de pago</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:var(--accent2)">${fmtFull(egEf)}</div><div class="stat-label">Efectivo</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:var(--accent)">${fmtFull(egTr)}</div><div class="stat-label">Transferencia</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:var(--amber)">${fmtFull(egTc)}</div><div class="stat-label">Tarjeta</div></div>
+    <div class="stat-card"><div class="stat-number" style="color:var(--muted)">${fmtFull(promEg)}</div><div class="stat-label">Promedio / Egreso</div></div>
+    ${totalIn>0?`
+    <div class="stat-card" style="grid-column:1/-1;background:transparent;border:none;padding:0;text-align:left"><div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px">Ingresos por método de pago</div></div>
+    <div class="stat-card" style="border-color:rgba(0,230,118,.3)"><div class="stat-number" style="color:var(--green);font-size:18px">${fmtFull(inEf)}</div><div class="stat-label">Efectivo</div></div>
+    <div class="stat-card" style="border-color:rgba(0,230,118,.3)"><div class="stat-number" style="color:var(--green);font-size:18px">${fmtFull(inTr)}</div><div class="stat-label">Transferencia</div></div>
+    <div class="stat-card" style="border-color:rgba(0,230,118,.3)"><div class="stat-number" style="color:var(--green);font-size:18px">${fmtFull(inTc)}</div><div class="stat-label">Tarjeta</div></div>`:''}
+  `;
+  // Solo proveedores de egresos (los ingresos no tienen proveedor en el sentido tradicional)
+  const pm={};egresos.forEach(t=>{pm[t.proveedor||'Sin proveedor']=(pm[t.proveedor||'Sin proveedor']||0)+(t.monto||0);});
   document.getElementById('provList').innerHTML=Object.entries(pm).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([n,s],i)=>`<div class="prov-row"><span class="prov-rank">${i+1}</span><span class="prov-name">${n}</span><span class="prov-amount">${fmtFull(s)}</span></div>`).join('');
-  renderConceptBars(txs,'statsConceptList',15);
+  // Conceptos: solo egresos
+  renderConceptBars(egresos,'statsConceptList',15);
 }
 
 function setStatsTab(el,tab){
@@ -1596,7 +1748,7 @@ function importJSON(ev){
 function openNewTx(pre){
   editingTxId=pre?.id||null;
   document.getElementById('f-obra').innerHTML=state.projects.map(p=>`<option value="${p.id}"${p.id===activeProject?' selected':''}>${p.name}</option>`).join('');
-  document.getElementById('prov-dl').innerHTML=[...new Set(state.transactions.map(t=>t.proveedor).filter(Boolean))].map(p=>`<option value="${p}">`).join('');
+  refreshProveedoresDatalist();
   if(pre){
     document.getElementById('newTxTitle').innerHTML='Editar <span>Gasto</span>';
     document.getElementById('saveTxBtn').textContent='GUARDAR CAMBIOS';
@@ -2197,6 +2349,117 @@ function getConceptoValue(){
   return sel.value;
 }
 
+// ── CATÁLOGO DE PROVEEDORES ──────────────────────────────────
+function getProveedores(){
+  if(!state.proveedores) state.proveedores=[];
+  return state.proveedores;
+}
+
+// Migración automática: tomar todos los proveedores únicos que aparezcan en transacciones
+// y darles entrada al catálogo (idempotente)
+function migrarProveedoresDesdeTransacciones(){
+  if(!state.proveedores) state.proveedores=[];
+  const existentes=new Set(state.proveedores.map(p=>p.nombre.toLowerCase().trim()));
+  const enUso={};
+  (state.transactions||[]).forEach(t=>{
+    const nombre=(t.proveedor||'').trim();
+    if(!nombre) return;
+    const key=nombre.toLowerCase();
+    if(existentes.has(key)) return;
+    if(!enUso[key]) enUso[key]={nombre, rfc:t.rfcProveedor||'', count:0, lastUse:t.fecha||''};
+    enUso[key].count++;
+    if(t.rfcProveedor && !enUso[key].rfc) enUso[key].rfc=t.rfcProveedor;
+    if((t.fecha||'') > enUso[key].lastUse) enUso[key].lastUse=t.fecha||'';
+  });
+  Object.values(enUso).forEach(p=>{
+    state.proveedores.push({
+      id:'prov-'+uid(),
+      nombre:p.nombre,
+      rfc:(p.rfc||'').toUpperCase(),
+      categoria:'OTRO',
+      tel:'',email:'',contacto:'',direccion:'',notas:'',regimen:'',
+      createdAt:new Date().toISOString(),
+      migrated:true
+    });
+  });
+}
+
+function openNuevoProveedor(){
+  // Si el campo f-prov ya tiene texto, pre-llenar el nombre
+  const prov=document.getElementById('f-prov')?.value.trim()||'';
+  ['np-nombre','np-rfc','np-tel','np-email','np-contacto','np-direccion','np-notas'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('np-regimen').value='';
+  document.getElementById('np-categoria').value='MATERIALES';
+  if(prov) document.getElementById('np-nombre').value=prov;
+  document.getElementById('nuevoProvModal').classList.add('open');
+  setTimeout(()=>{
+    const inp=prov?document.getElementById('np-rfc'):document.getElementById('np-nombre');
+    if(inp)inp.focus();
+  },250);
+}
+
+async function saveNuevoProveedor(){
+  const nombre=document.getElementById('np-nombre').value.trim();
+  if(!nombre){shakeInput('np-nombre');return;}
+  // Verificar duplicado
+  const existing=getProveedores().find(p=>p.nombre.toLowerCase().trim()===nombre.toLowerCase());
+  if(existing && !confirm(`Ya existe un proveedor "${existing.nombre}". ¿Crear duplicado?`))return;
+  if(!state.proveedores) state.proveedores=[];
+  const prov={
+    id:'prov-'+uid(),
+    nombre,
+    rfc:document.getElementById('np-rfc').value.trim().toUpperCase(),
+    regimen:document.getElementById('np-regimen').value,
+    categoria:document.getElementById('np-categoria').value,
+    tel:document.getElementById('np-tel').value.trim(),
+    email:document.getElementById('np-email').value.trim(),
+    contacto:document.getElementById('np-contacto').value.trim(),
+    direccion:document.getElementById('np-direccion').value.trim(),
+    notas:document.getElementById('np-notas').value.trim(),
+    createdAt:new Date().toISOString()
+  };
+  state.proveedores.push(prov);
+  await saveState();
+  // Refrescar datalist y completar campo del form actual
+  refreshProveedoresDatalist();
+  const fProv=document.getElementById('f-prov');
+  if(fProv){
+    fProv.value=nombre;
+    // Si el formulario tiene RFC también, llenarlo
+    const fRfc=document.getElementById('f-rfc');
+    if(fRfc && prov.rfc) fRfc.value=prov.rfc;
+  }
+  document.getElementById('nuevoProvModal').classList.remove('open');
+  showToast('✅ Proveedor registrado: '+nombre);
+}
+
+function refreshProveedoresDatalist(){
+  const dl=document.getElementById('prov-dl');
+  if(!dl) return;
+  // Combinar proveedores del catálogo con los que aparecen en transacciones (por seguridad)
+  const catalogados=getProveedores().map(p=>p.nombre);
+  const enTx=[...new Set((state.transactions||[]).map(t=>t.proveedor).filter(Boolean))];
+  const todos=[...new Set([...catalogados,...enTx])].sort();
+  dl.innerHTML=todos.map(p=>`<option value="${p.replace(/"/g,'&quot;')}">`).join('');
+}
+
+function checkProveedorExists(){
+  // Si el usuario escribió un proveedor que NO está en el catálogo, sugerir agregarlo
+  const fp=document.getElementById('f-prov');
+  if(!fp)return;
+  const val=fp.value.trim();
+  if(!val)return;
+  const provs=getProveedores();
+  const found=provs.find(p=>p.nombre.toLowerCase()===val.toLowerCase());
+  if(found && found.rfc){
+    // Auto-llenar RFC si está vacío
+    const fRfc=document.getElementById('f-rfc');
+    if(fRfc && !fRfc.value.trim()) fRfc.value=found.rfc;
+  }
+}
+
 // ── OBRA INFO ────────────────────────────────────────────────
 function openObraInfo(){
   const p=state.projects.find(x=>x.id===activeProject);if(!p)return;
@@ -2557,14 +2820,24 @@ function renderPresupuesto(){
   // Actual by concept
   const actual = {};
   txs.forEach(t=>{ actual[t.concepto]=(actual[t.concepto]||0)+(t.monto||0); });
-  const allC = [...new Set([...Object.keys(presup), ...Object.keys(actual)])];
-  const totalPresup = Object.values(presup).reduce((s,v)=>s+v,0);
+  // Si hay partidas detalladas, su total reemplaza al presupuesto manual por concepto
+  const partidas = proj?.presupuestoPartidas || [];
+  const presupFromPartidas = {};
+  partidas.forEach(pa=>{
+    const subt = (pa.cantidad||0)*(pa.pu||0);
+    presupFromPartidas[pa.concepto] = (presupFromPartidas[pa.concepto]||0) + subt;
+  });
+  // Merge: partida-derived sobreescribe manual cuando existe
+  const presupFinal = {...presup};
+  Object.entries(presupFromPartidas).forEach(([k,v])=>{ presupFinal[k]=v; });
+  const allC = [...new Set([...Object.keys(presupFinal), ...Object.keys(actual)])];
+  const totalPresup = Object.values(presupFinal).reduce((s,v)=>s+v,0);
   const totalActual = Object.values(actual).reduce((s,v)=>s+v,0);
   const pct = totalPresup>0 ? (totalActual/totalPresup*100) : 0;
   const semaforoColor = pct>100?'var(--red)':pct>85?'var(--amber)':'var(--green)';
   // KPIs
   document.getElementById('presup-kpis').innerHTML = `
-    <div class="kpi-card c1"><div class="kpi-label">Presupuesto Total</div><div class="kpi-value accent">${fmt(totalPresup)}</div><div class="kpi-sub">definido</div></div>
+    <div class="kpi-card c1"><div class="kpi-label">Presupuesto Total</div><div class="kpi-value accent">${fmt(totalPresup)}</div><div class="kpi-sub">${partidas.length?partidas.length+' partidas':'definido'}</div></div>
     <div class="kpi-card c2"><div class="kpi-label">Ejercido</div><div class="kpi-value orange">${fmt(totalActual)}</div><div class="kpi-sub">${pct.toFixed(1)}% del presupuesto</div></div>
     <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px">
       <div style="display:flex;justify-content:space-between;margin-bottom:8px">
@@ -2581,9 +2854,9 @@ function renderPresupuesto(){
     </div>`;
   // Concept rows
   const list = document.getElementById('presup-list'); list.innerHTML='';
-  if(!allC.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📐</div><div class="empty-text">Toca ✏️ para definir el presupuesto por concepto</div></div>'; return; }
-  allC.filter(c=>presup[c]||actual[c]).sort((a,b)=>(presup[b]||0)-(presup[a]||0)).forEach((c,i)=>{
-    const p = presup[c]||0; const a = actual[c]||0;
+  if(!allC.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📐</div><div class="empty-text">Toca 📥 para importar desde un catálogo o ✏️ para definir manualmente</div></div>'; return; }
+  allC.filter(c=>presupFinal[c]||actual[c]).sort((a,b)=>(presupFinal[b]||0)-(presupFinal[a]||0)).forEach((c,i)=>{
+    const p = presupFinal[c]||0; const a = actual[c]||0;
     const cp = p>0?(a/p*100):0;
     const col = cp>100?'var(--red)':cp>85?'var(--amber)':'var(--green)';
     const icon = ICONS[c]||'📦';
@@ -2605,6 +2878,338 @@ function renderPresupuesto(){
       </div>`:''}`;
     list.appendChild(card);
   });
+  // También renderizar partidas y resumen si están visibles
+  renderPresupPartidas();
+  renderPresupResumen();
+}
+
+function setPresupTab(el, tab){
+  document.querySelectorAll('#presupTabBar .ins-tab').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  ['concepto','partidas','resumen'].forEach(t=>{
+    const p=document.getElementById('presup-panel-'+t);
+    if(p) p.style.display = t===tab?'block':'none';
+  });
+  if(tab==='partidas') renderPresupPartidas();
+  if(tab==='resumen') renderPresupResumen();
+}
+
+function renderPresupPartidas(){
+  const proj=state.projects.find(p=>p.id===activeProject);
+  const partidas=proj?.presupuestoPartidas||[];
+  const list=document.getElementById('presup-partidas-list');
+  if(!list) return;
+  if(!partidas.length){
+    list.innerHTML='<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Sin partidas detalladas.<br>Toca 📥 para importar desde un catálogo o APUs guardados.</div></div>';
+    return;
+  }
+  // Agrupar por concepto
+  const grupos={};
+  partidas.forEach(pa=>{ if(!grupos[pa.concepto])grupos[pa.concepto]=[]; grupos[pa.concepto].push(pa); });
+  list.innerHTML = Object.entries(grupos).map(([conc,parts])=>{
+    const subtConc = parts.reduce((s,p)=>s+((p.cantidad||0)*(p.pu||0)),0);
+    return `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:8px">
+          <span style="font-size:16px">${ICONS[conc]||'📦'}</span>
+          <span style="font-size:12px;font-weight:700;flex:1">${conc}</span>
+          <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent2)">${fmt(subtConc)}</span>
+        </div>
+        ${parts.map(p=>{
+          const subt=(p.cantidad||0)*(p.pu||0);
+          return `
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(42,61,82,.4)">
+              <div style="flex:1;min-width:0">
+                ${p.clave?`<div style="font-family:var(--mono);font-size:9px;color:var(--accent)">${p.clave}</div>`:''}
+                <div style="font-size:11px;line-height:1.3">${p.desc}</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px"><span style="font-family:var(--mono)">${p.cantidad}</span> ${p.unidad} × <span style="font-family:var(--mono)">${fmtFull(p.pu)}</span></div>
+              </div>
+              <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent2);flex-shrink:0">${fmt(subt)}</div>
+              <button onclick="removePresupPartida('${p.id}')" style="width:24px;height:24px;border-radius:6px;border:none;background:rgba(255,68,68,.1);color:var(--red);cursor:pointer;font-size:13px;flex-shrink:0">×</button>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }).join('');
+}
+
+function renderPresupResumen(){
+  const proj=state.projects.find(p=>p.id===activeProject);
+  const partidas=proj?.presupuestoPartidas||[];
+  const presup=proj?.presupuesto||{};
+  const txs=state.transactions.filter(t=>t.obraId===activeProject&&t.tipo!=='INGRESO');
+  const totalPresupPartidas=partidas.reduce((s,p)=>s+((p.cantidad||0)*(p.pu||0)),0);
+  const totalPresupManual=Object.values(presup).reduce((s,v)=>s+v,0);
+  const totalActual=txs.reduce((s,t)=>s+(t.monto||0),0);
+  const info=proj?.info||{};
+  const contrato=info.montoContrato||0;
+  const div=document.getElementById('presup-resumen-content');
+  if(!div) return;
+  div.innerHTML=`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Resumen del Presupuesto</div>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px">
+        ${contrato>0?`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Monto Contrato</span><span style="font-family:var(--mono);font-weight:700;color:var(--accent)">${fmtFull(contrato)}</span></div>`:''}
+        ${partidas.length?`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Presupuesto por Partidas (${partidas.length})</span><span style="font-family:var(--mono);font-weight:700">${fmtFull(totalPresupPartidas)}</span></div>`:''}
+        ${Object.keys(presup).length?`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Presupuesto Manual (${Object.keys(presup).length} conceptos)</span><span style="font-family:var(--mono);font-weight:700">${fmtFull(totalPresupManual)}</span></div>`:''}
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Total Ejercido (${txs.length} mov.)</span><span style="font-family:var(--mono);font-weight:700;color:var(--accent2)">${fmtFull(totalActual)}</span></div>
+        ${contrato>0?(()=>{const margen=contrato-totalActual;const margenPct=contrato>0?margen/contrato*100:0;const col=margen>=0?'var(--green)':'var(--red)';return `<div style="display:flex;justify-content:space-between;padding:8px 0;background:rgba(255,107,43,.05);margin:0 -14px;padding-left:14px;padding-right:14px"><span style="font-weight:700">Margen vs Contrato</span><span style="font-family:var(--mono);font-weight:700;color:${col}">${margen>=0?'+':''}${fmtFull(margen)} (${margenPct.toFixed(1)}%)</span></div>`;})():''}
+      </div>
+    </div>
+    ${partidas.length?`<button onclick="exportPresupuestoExcel()" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid var(--green);background:rgba(0,230,118,.08);color:var(--green);font-weight:700;font-family:var(--font);font-size:13px;cursor:pointer">📊 Exportar Presupuesto a Excel</button>`:''}
+    ${partidas.length?`<button onclick="clearPresupPartidas()" style="width:100%;padding:12px;border-radius:10px;border:1.5px solid rgba(255,68,68,.3);background:rgba(255,68,68,.05);color:var(--red);font-weight:700;font-family:var(--font);font-size:12px;cursor:pointer;margin-top:8px">🗑 Limpiar todas las partidas</button>`:''}
+  `;
+}
+
+async function removePresupPartida(partidaId){
+  const proj=state.projects.find(p=>p.id===activeProject);if(!proj)return;
+  if(!confirm('¿Quitar esta partida del presupuesto?'))return;
+  proj.presupuestoPartidas=(proj.presupuestoPartidas||[]).filter(p=>p.id!==partidaId);
+  await saveState();
+  renderPresupuesto();
+  showToast('Partida eliminada');
+}
+
+async function clearPresupPartidas(){
+  const proj=state.projects.find(p=>p.id===activeProject);if(!proj)return;
+  if(!confirm('¿Eliminar TODAS las partidas del presupuesto? (El presupuesto manual por concepto se conserva)'))return;
+  proj.presupuestoPartidas=[];
+  await saveState();
+  renderPresupuesto();
+  showToast('Partidas limpiadas');
+}
+
+// ── IMPORTACIÓN DE PRESUPUESTO ──────────────────────────────
+let _impMode='cat';
+let _impSelection={}; // {apuId: cantidad}
+
+function openImportPresupuesto(){
+  _impSelection={};
+  document.getElementById('imp-cat-select').innerHTML='<option value="">— Selecciona un catálogo —</option>';
+  const cats=getCatalogs();
+  cats.forEach(c=>{
+    const opt=document.createElement('option');
+    opt.value=c.id;
+    opt.textContent=c.name+(c.clave?' ('+c.clave+')':'');
+    document.getElementById('imp-cat-select').appendChild(opt);
+  });
+  if(!cats.length){
+    document.getElementById('imp-cat-empty').style.display='block';
+    document.getElementById('imp-cat-apus-wrap').style.display='none';
+  } else {
+    document.getElementById('imp-cat-empty').style.display='none';
+  }
+  document.getElementById('imp-apu-search').value='';
+  setImportTab('cat');
+  document.getElementById('importPresupModal').classList.add('open');
+}
+
+function setImportTab(tab){
+  _impMode=tab;
+  document.getElementById('imp-tab-cat').classList.toggle('active', tab==='cat');
+  document.getElementById('imp-tab-apu').classList.toggle('active', tab==='apu');
+  document.getElementById('imp-panel-cat').style.display = tab==='cat'?'block':'none';
+  document.getElementById('imp-panel-apu').style.display = tab==='apu'?'block':'none';
+  if(tab==='apu') renderImpApusList();
+}
+
+function renderImpCatApus(){
+  const catId=document.getElementById('imp-cat-select').value;
+  const wrap=document.getElementById('imp-cat-apus-wrap');
+  if(!catId){wrap.style.display='none';return;}
+  const cat=getCatalogs().find(c=>c.id===catId);
+  if(!cat){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  const allApus=getAllSavedApus();
+  const apusInCat=(cat.apuIds||[]).map(id=>allApus.find(a=>a.id===id)).filter(Boolean);
+  renderImpApusInList('imp-cat-apus-list', apusInCat);
+}
+
+function renderImpApusList(){
+  const q=(document.getElementById('imp-apu-search').value||'').toLowerCase();
+  let apus=getAllSavedApus();
+  if(q){
+    apus=apus.filter(a=>(a.desc||'').toLowerCase().includes(q) || (a.num||'').toLowerCase().includes(q));
+  }
+  renderImpApusInList('imp-apus-list', apus);
+}
+
+function calcApuPU(apu){
+  const cd=(apu.rows||[]).reduce((s,r)=>s+((r.cant||0)*(r.pu||0)),0);
+  const ind=cd*HL_CARGOS.indirectos, util=cd*HL_CARGOS.utilidad;
+  const fin=(cd+ind+util)*HL_CARGOS.financiamiento;
+  const vig=(cd+ind+util+fin)*HL_CARGOS.vigilancia;
+  return (cd+ind+util+fin+vig)/((apu.rend||1));
+}
+
+function renderImpApusInList(targetId, apus){
+  const list=document.getElementById(targetId);
+  if(!list)return;
+  if(!apus.length){
+    list.innerHTML='<div class="empty" style="padding:30px 10px"><div class="empty-icon">🔍</div><div class="empty-text">Sin resultados</div></div>';
+    return;
+  }
+  list.innerHTML=apus.map(a=>{
+    const pu=calcApuPU(a);
+    const sel=_impSelection[a.id]!==undefined;
+    const cant=_impSelection[a.id]||'';
+    return `
+      <div style="background:${sel?'rgba(0,230,118,.08)':'var(--surface2)'};border:1.5px solid ${sel?'var(--green)':'var(--border)'};border-radius:10px;padding:10px 12px">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;cursor:pointer" onclick="toggleImpSel('${a.id}')">
+          <div style="width:18px;height:18px;border-radius:5px;border:1.5px solid ${sel?'var(--green)':'var(--border)'};background:${sel?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;font-size:11px;font-weight:700;margin-top:2px">${sel?'✓':''}</div>
+          <div style="flex:1;min-width:0">
+            ${a.num?`<div style="font-family:var(--mono);font-size:9px;color:var(--accent);margin-bottom:1px">${a.num}</div>`:''}
+            <div style="font-size:11px;font-weight:600;line-height:1.35">${a.desc}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">PU: <span style="font-family:var(--mono);color:var(--accent2);font-weight:700">${fmtFull(pu)}</span> /${a.unidad||''}</div>
+          </div>
+        </div>
+        ${sel?`
+          <div style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(0,230,118,.05);border-radius:6px;margin-top:4px">
+            <label style="font-size:10px;color:var(--muted);font-weight:600">CANTIDAD:</label>
+            <input type="number" inputmode="decimal" step="0.01" value="${cant}" oninput="updateImpQty('${a.id}',this.value)"
+              style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:13px;font-weight:700;padding:6px 10px;outline:none" placeholder="0.00">
+            <span style="font-size:11px;color:var(--muted)">${a.unidad||''}</span>
+            ${cant?`<span style="font-family:var(--mono);font-size:11px;color:var(--accent2);font-weight:700;min-width:80px;text-align:right">${fmt(parseFloat(cant)*pu)}</span>`:''}
+          </div>`:''}
+      </div>`;
+  }).join('');
+}
+
+function toggleImpSel(apuId){
+  if(_impSelection[apuId]!==undefined) delete _impSelection[apuId];
+  else _impSelection[apuId]=1;
+  if(_impMode==='cat') renderImpCatApus(); else renderImpApusList();
+}
+
+function updateImpQty(apuId, val){
+  _impSelection[apuId]=parseFloat(val)||0;
+  // No re-renderizar para no perder focus, solo actualizar el subtotal visible si lo hubiera
+  const v=parseFloat(val)||0;
+  const apu=getAllSavedApus().find(a=>a.id===apuId);
+  if(apu){
+    const pu=calcApuPU(apu);
+    // Localizar el span del subtotal y actualizarlo
+    const container=event.target.parentElement;
+    let subSpan=container.querySelector('span:last-child');
+    if(subSpan && subSpan.style.minWidth) subSpan.textContent=fmt(v*pu);
+  }
+}
+
+async function confirmImportPresupuesto(){
+  const ids=Object.keys(_impSelection);
+  if(!ids.length){showToast('Selecciona al menos un APU',true);return;}
+  // Validar que todos tengan cantidad > 0
+  const sinCant=ids.filter(id=>!_impSelection[id]||_impSelection[id]<=0);
+  if(sinCant.length){showToast('Captura la cantidad de obra para todos los seleccionados',true);return;}
+  const proj=state.projects.find(p=>p.id===activeProject);if(!proj)return;
+  if(!proj.presupuestoPartidas) proj.presupuestoPartidas=[];
+  const allApus=getAllSavedApus();
+  let added=0;
+  ids.forEach(apuId=>{
+    const apu=allApus.find(a=>a.id===apuId);
+    if(!apu)return;
+    const pu=calcApuPU(apu);
+    // Inferir concepto desde el APU: tomamos el más frecuente entre las filas si no hay, default OTRO
+    let concepto = inferirConceptoDesdeApu(apu);
+    proj.presupuestoPartidas.push({
+      id:'pp-'+uid(),
+      apuId:apu.id,
+      clave:apu.num||'',
+      desc:apu.desc,
+      unidad:apu.unidad||'',
+      cantidad:_impSelection[apuId],
+      pu:pu,
+      concepto:concepto,
+      addedAt:new Date().toISOString()
+    });
+    added++;
+  });
+  await saveState();
+  _impSelection={};
+  document.getElementById('importPresupModal').classList.remove('open');
+  renderPresupuesto();
+  showToast(`✅ ${added} partida${added>1?'s':''} importada${added>1?'s':''}`);
+}
+
+function inferirConceptoDesdeApu(apu){
+  // Mapeo simple basado en palabras clave del desc del APU
+  const d=(apu.desc||'').toUpperCase();
+  if(/CIMIENT|ZAPAT|DADO|PLANTILLA|CADENA/.test(d)) return 'CIMENTACION';
+  if(/CASTILLO|TRABE|LOSA|DALA|COLUMNA|VIGUET|BOVEDIL/.test(d)) return 'ESTRUCTURA';
+  if(/MURO|TABIQUE|TABICON|BLOCK/.test(d)) return 'MAMPOSTERIA';
+  if(/APLANAD|YESO|PINTUR|ACABAD/.test(d)) return 'ACABADOS';
+  if(/PISO|PORCELAN|AZULEJ|CANTER|FIRME/.test(d)) return 'PISOS';
+  if(/CABLE|CONDUIT|APAGAD|CONTACT|CENTRO DE CARGA|INTERRUPTOR/.test(d)) return 'ELECTRICO';
+  if(/PVC|TINACO|HIDRAULIC|FONTAN|TUBER|CONEX/.test(d)) return 'PLOMERIA';
+  if(/PUERTA|CARPINT|HERRER|VENTAN/.test(d)) return 'CARPINTERIA';
+  if(/EXCAV|DEMOL|ACARRE|RELLEN|CARG/.test(d)) return 'GASTOS OBRA';
+  if(/CUADRILLA|MANO DE OBRA|JORNAL/.test(d)) return 'MANO DE OBRA';
+  if(/ARCOTECHO|ESTRUCTURA METAL|LAMINA/.test(d)) return 'ARCOTECHO';
+  return 'MATERIALES';
+}
+
+function exportPresupuestoExcel(){
+  const proj=state.projects.find(p=>p.id===activeProject);if(!proj)return;
+  const partidas=proj.presupuestoPartidas||[];
+  if(!partidas.length){showToast('Sin partidas para exportar',true);return;}
+
+  const wb=XLSX.utils.book_new();
+
+  // HOJA 1: Presupuesto por partidas
+  const rows=[
+    ['PRESUPUESTO DE OBRA — HAUS LAAK CONSTRUCTORA','','','','','',''],
+    [proj.name||'','','','','','',''],
+    ['','','','','','',''],
+    ['#','CLAVE','CONCEPTO','DESCRIPCIÓN','UNIDAD','CANTIDAD','P.UNITARIO','IMPORTE'],
+  ];
+  let total=0;
+  // Agrupar por concepto
+  const grupos={};
+  partidas.forEach(p=>{ if(!grupos[p.concepto])grupos[p.concepto]=[]; grupos[p.concepto].push(p); });
+  let idx=1;
+  Object.entries(grupos).forEach(([conc,parts])=>{
+    rows.push(['', '', conc, '', '', '', '', '']);
+    let subt=0;
+    parts.forEach(p=>{
+      const imp=(p.cantidad||0)*(p.pu||0);
+      subt+=imp;
+      rows.push([idx++, p.clave||'', conc, p.desc, p.unidad||'', p.cantidad, p.pu, imp]);
+    });
+    rows.push(['','','','','','','Subtotal '+conc, subt]);
+    rows.push(['','','','','','','','']);
+    total+=subt;
+  });
+  rows.push(['','','','','','','TOTAL', total]);
+
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:4},{wch:14},{wch:18},{wch:55},{wch:10},{wch:12},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Presupuesto');
+
+  // HOJA 2: comparativo presupuesto vs real por concepto
+  const txs=state.transactions.filter(t=>t.obraId===activeProject&&t.tipo!=='INGRESO');
+  const real={};
+  txs.forEach(t=>{ real[t.concepto]=(real[t.concepto]||0)+(t.monto||0); });
+  const presupConc={};
+  partidas.forEach(p=>{ presupConc[p.concepto]=(presupConc[p.concepto]||0)+((p.cantidad||0)*(p.pu||0)); });
+  const conceptosAll=[...new Set([...Object.keys(presupConc),...Object.keys(real)])];
+  const compRows=[
+    ['COMPARATIVO PRESUPUESTO vs REAL','','','',''],
+    [proj.name||'','','','',''],
+    ['','','','',''],
+    ['CONCEPTO','PRESUPUESTO','EJERCIDO','DIFERENCIA','% AVANCE'],
+  ];
+  conceptosAll.forEach(c=>{
+    const pp=presupConc[c]||0; const rr=real[c]||0;
+    const diff=pp-rr;
+    const pct=pp>0?rr/pp*100:0;
+    compRows.push([c, pp, rr, diff, pct/100]);
+  });
+  const ws2=XLSX.utils.aoa_to_sheet(compRows);
+  ws2['!cols']=[{wch:22},{wch:14},{wch:14},{wch:14},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Comparativo');
+
+  const fn='Presupuesto_'+(proj.name||'obra').replace(/[^\w]+/g,'_')+'_'+today()+'.xlsx';
+  XLSX.writeFile(wb, fn);
+  showToast('✅ Presupuesto exportado');
 }
 
 // ── FOTOGRAFÍAS DE AVANCE ─────────────────────────────────────
@@ -3947,6 +4552,8 @@ function init(){
     if(!state.projects.find(p=>p.id==='canchas-padel-final'))
       state.projects.unshift({id:'canchas-padel-final',name:'Canchas Pádel Final',location:'Querétaro'});
     storageSaveSync(state);
+    // Migrar proveedores: poblar catálogo a partir de transacciones existentes
+    migrarProveedoresDesdeTransacciones();
     // Default active project
     const cpf=state.projects.find(p=>p.id==='canchas-padel-final');
     activeProject=cpf?cpf.id:state.projects[0].id;
