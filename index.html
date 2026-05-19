@@ -197,9 +197,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .month-bar-fill{height:100%;border-radius:2px;transition:width .5s ease}
 .month-detail{border-top:1px solid var(--border);padding:10px 0;display:none}
 .month-detail.open{display:block}
-.month-concept-row{display:flex;justify-content:space-between;padding:5px 16px;font-size:12px}
-.month-concept-name{color:var(--muted)}
-.month-concept-amt{font-family:var(--mono);color:var(--text)}
+.month-concept-row{display:flex;justify-content:space-between;padding:7px 16px;font-size:12px;cursor:pointer;border-radius:8px;margin:0 6px;transition:background .15s}
+.month-concept-row:hover,.month-concept-row:active{background:var(--surface2)}
+.month-concept-name{color:var(--muted);display:flex;align-items:center;gap:6px}
+.month-concept-amt{font-family:var(--mono);color:var(--text);font-weight:600}
+/* DRILL-DOWN ANÁLISIS */
+.drill-tx-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all .15s;margin-bottom:6px}
+.drill-tx-row:active{background:var(--surface2);transform:scale(.98)}
+.drill-tx-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.drill-tx-info{flex:1;min-width:0}
+.drill-tx-desc{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drill-tx-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.drill-tx-amt{font-family:var(--mono);font-size:14px;font-weight:700;flex-shrink:0}
 .fecha-group{margin-bottom:4px}
 .fecha-header{display:flex;align-items:center;gap:10px;padding:8px 0 6px;cursor:pointer}
 .fecha-day{font-family:var(--mono);font-size:22px;font-weight:800;color:var(--accent);width:36px;flex-shrink:0;text-align:center}
@@ -755,7 +764,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 <input type="file" id="file-input" accept="image/*,.pdf,application/pdf" class="input-hidden" onchange="handleFile(event)">
 
 <!-- NUEVO PROVEEDOR MODAL -->
-<div class="modal-overlay" id="nuevoProvModal" onclick="if(event.target===this)this.classList.remove('open')">
+<div class="modal-overlay" id="nuevoProvModal" onclick="if(event.target===this)this.classList.remove('open')" style="z-index:300">
   <div class="modal" style="max-height:88dvh;overflow-y:auto">
     <div class="modal-handle"></div>
     <div class="modal-title">Nuevo <span>Proveedor</span></div>
@@ -782,7 +791,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Categoría</label>
-          <select class="form-select" id="np-categoria">
+          <select class="form-select" id="np-categoria" onchange="checkSelectCustom('np-categoria','np-categoria-custom','custom_cat_proveedores')">
             <option value="MATERIALES">Materiales de Construcción</option>
             <option value="HERRAMIENTA">Herramienta y Renta</option>
             <option value="ELECTRICO">Eléctrico</option>
@@ -792,8 +801,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
             <option value="ACABADOS">Acabados</option>
             <option value="MAQUINARIA">Maquinaria</option>
             <option value="ADMINISTRATIVO">Administrativo / Fianzas</option>
+            <option value="MANO DE OBRA">Mano de Obra</option>
             <option value="OTRO">Otro</option>
+            <option value="__NUEVO__">＋ Nueva categoría…</option>
           </select>
+          <input class="form-input" id="np-categoria-custom" type="text" placeholder="Escribe la nueva categoría" style="display:none;margin-top:8px;text-transform:uppercase" autocomplete="off">
         </div>
         <div class="form-group"><label class="form-label">Teléfono</label>
           <input class="form-input" id="np-tel" placeholder="442 123 4567" inputmode="tel" autocomplete="off">
@@ -890,7 +902,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
           <datalist id="prov-dl"></datalist>
         </div>
         <div class="form-group"><label class="form-label">Concepto</label>
-          <select class="form-select" id="f-concepto" onchange="checkConceptoOtro()">
+          <select class="form-select" id="f-concepto" onchange="checkSelectCustom('f-concepto','f-concepto-custom','custom_conceptos')">
             <option value="CIMENTACION">Cimentación</option><option value="MANO DE OBRA">Mano de Obra</option>
             <option value="MATERIALES">Materiales</option><option value="ELECTRICO">Eléctrico</option>
             <option value="HERRAMIENTA">Herramienta / Renta</option><option value="GASTOS OBRA">Gastos de Obra</option>
@@ -1206,6 +1218,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
       <div class="form-group"><label class="form-label">Ubicación (opcional)</label><input class="form-input" id="p-loc" type="text" placeholder="Ej: San Miguel de Allende"></div>
       <button class="submit-btn" onclick="saveProject()">CREAR OBRA</button>
     </div>
+  </div>
+</div>
+
+<!-- DRILL-DOWN MODAL: Concepto × Mes en Análisis -->
+<div class="modal-overlay" id="drillModal" onclick="closeOnBg(event,'drillModal')" style="z-index:250">
+  <div class="modal" style="max-height:88dvh;overflow-y:auto">
+    <div class="modal-handle"></div>
+    <div id="drillContent"></div>
   </div>
 </div>
 
@@ -1658,10 +1678,10 @@ function renderAnio(){
         </div>
         ${mEntries.length?`<div style="display:flex;gap:3px;align-items:flex-end;height:${barH+16}px">${barChart}</div>`:''}
       </div>
-      <div style="border-top:1px solid var(--border);padding:10px 16px">
-        ${topC.map(([c,v])=>`<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:12px">
-          <span style="color:var(--muted)">${ICONS[c]||'📦'} ${c}</span>
-          <span style="font-family:var(--mono);color:var(--accent2)">${fmtFull(v)}</span>
+      <div style="border-top:1px solid var(--border);padding:10px 16px" id="anio-concepts-${y.anio}">
+        ${topC.map(([c,v])=>`<div class="month-concept-row" onclick="openConceptoDrill('${y.anio}','${c}','${y.anio}','${color}')">
+          <span class="month-concept-name">${ICONS[c]||'📦'} ${c} <span style="font-size:9px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;margin-left:4px">${txs.filter(t=>t.fecha&&t.fecha.startsWith(y.anio)&&t.concepto===c).length} reg.</span></span>
+          <span class="month-concept-amt">${fmtFull(v)}</span>
         </div>`).join('')}
       </div>`;
     container.appendChild(card);
@@ -1731,9 +1751,9 @@ function renderSemanas(){
         ${sem.tc?`<span style="font-size:10px;background:rgba(0,230,118,.1);color:var(--green);padding:2px 8px;border-radius:6px;font-weight:700">💳 ${fmtFull(sem.tc)}</span>`:''}
       </div>
       <div style="padding:4px 16px 10px;display:flex;flex-direction:column;gap:2px">
-        ${topC.map(([c,v])=>`<div style="display:flex;justify-content:space-between;font-size:11px">
-          <span style="color:var(--muted)">${ICONS[c]||'📦'} ${c}</span>
-          <span style="font-family:var(--mono);color:var(--text)">${fmtFull(v)}</span>
+        ${topC.map(([c,v])=>`<div class="month-concept-row" onclick="openConceptoDrill('${sem.key}','${c}','${sem.label}','${color}')">
+          <span class="month-concept-name">${ICONS[c]||'📦'} ${c} <span style="font-size:9px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px;margin-left:4px">${state.transactions.filter(t=>t.obraId===activeProject&&t.concepto===c&&t.fecha&&t.fecha>=sem.key&&t.fecha<=sem.key.replace(/(\d{4}-\d{2}-\d{2})/,(_,d)=>{const e=new Date(d+'T12:00:00');e.setDate(e.getDate()+6);return e.toISOString().split('T')[0];})).length} reg.</span></span>
+          <span class="month-concept-amt">${fmtFull(v)}</span>
         </div>`).join('')}
       </div>`;
     container.appendChild(card);
@@ -1753,10 +1773,76 @@ function renderMeses(){
     const [y,mo]=m.key.split('-');const moIdx=parseInt(mo)-1;const color=COLS[i%COLS.length];const pct=(m.total/maxVal*100).toFixed(0);
     const topConcepts=Object.entries(m.conceptos).sort((a,b)=>b[1]-a[1]);
     const card=document.createElement('div');card.className='month-card';
-    card.innerHTML=`<div class="month-header"><div class="month-icon" style="background:${color}22">${MONTH_ICONS[moIdx]}</div><div class="month-info"><div class="month-name">${MONTH_NAMES[moIdx]} ${y}</div><div class="month-count">${m.count} registro${m.count>1?'s':''}</div></div><div class="month-total">${fmtFull(m.total)}</div></div><div class="month-bar"><div class="month-bar-fill" style="width:${pct}%;background:${color}"></div></div><div class="month-detail" id="mdet-${m.key}">${topConcepts.map(([name,amt])=>`<div class="month-concept-row"><span class="month-concept-name">${ICONS[name]||'📦'} ${name}</span><span class="month-concept-amt">${fmtFull(amt)}</span></div>`).join('')}</div>`;
-    card.querySelector('.month-header').onclick=()=>card.querySelector('.month-detail').classList.toggle('open');
+    // Header
+    const hdr=document.createElement('div');hdr.className='month-header';hdr.style.cursor='pointer';
+    hdr.innerHTML=`<div class="month-icon" style="background:${color}22">${MONTH_ICONS[moIdx]}</div><div class="month-info"><div class="month-name">${MONTH_NAMES[moIdx]} ${y}</div><div class="month-count">${m.count} registro${m.count>1?'s':''}</div></div><div class="month-total">${fmtFull(m.total)}</div>`;
+    const det=document.createElement('div');det.className='month-detail';det.id='mdet-'+m.key;
+    // Barra
+    const bar=document.createElement('div');bar.className='month-bar';bar.innerHTML=`<div class="month-bar-fill" style="width:${pct}%;background:${color}"></div>`;
+    // Filas de concepto — cada una clickeable
+    topConcepts.forEach(([name,amt])=>{
+      const row=document.createElement('div');row.className='month-concept-row';
+      row.innerHTML=`<span class="month-concept-name">${ICONS[name]||'📦'} ${name} <span style="font-size:9px;background:rgba(255,255,255,.06);padding:1px 6px;border-radius:4px;margin-left:4px;color:var(--muted)">${m.txs.filter(t=>t.concepto===name).length} reg.</span></span><span class="month-concept-amt">${fmtFull(amt)}</span>`;
+      row.onclick=(e)=>{e.stopPropagation();openConceptoDrill(m.key,name,MONTH_NAMES[moIdx]+' '+y,color);};
+      det.appendChild(row);
+    });
+    hdr.onclick=()=>det.classList.toggle('open');
+    card.appendChild(hdr);card.appendChild(bar);card.appendChild(det);
     container.appendChild(card);
   });
+}
+
+function openConceptoDrill(keyPrefix,concepto,label,color){
+  // keyPrefix puede ser: '2026' (año), '2026-05' (mes), '2026-04-28' (semana inicio)
+  let txs;
+  if(keyPrefix.length===4){
+    // Año
+    txs=state.transactions.filter(t=>t.obraId===activeProject&&t.concepto===concepto&&t.fecha&&t.fecha.startsWith(keyPrefix));
+  } else if(keyPrefix.length===7){
+    // Mes
+    txs=state.transactions.filter(t=>t.obraId===activeProject&&t.concepto===concepto&&t.fecha&&t.fecha.startsWith(keyPrefix));
+  } else {
+    // Semana — rango lunes a domingo
+    const fin=new Date(keyPrefix+'T12:00:00');fin.setDate(fin.getDate()+6);
+    const finStr=fin.toISOString().split('T')[0];
+    txs=state.transactions.filter(t=>t.obraId===activeProject&&t.concepto===concepto&&t.fecha&&t.fecha>=keyPrefix&&t.fecha<=finStr);
+  }
+  txs=txs.sort((a,b)=>new Date(b.fecha||b.createdAt)-new Date(a.fecha||a.createdAt));
+  const total=txs.reduce((s,t)=>s+(t.monto||0),0);
+  const icon=ICONS[concepto]||'📦';
+  const bg=BGMAP[concepto]||'rgba(100,116,139,.15)';
+  document.getElementById('drillContent').innerHTML=`
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="width:44px;height:44px;border-radius:14px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${icon}</div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:800">${concepto}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${label} · ${txs.length} registro${txs.length>1?'s':''}</div>
+      </div>
+      <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--accent2)">${fmtFull(total)}</div>
+    </div>
+    <div style="height:3px;background:${color};border-radius:2px;margin-bottom:16px;opacity:.6"></div>
+    <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:10px">Registros</div>`;
+  const cont=document.getElementById('drillContent');
+  if(!txs.length){
+    const empty=document.createElement('div');empty.className='empty';empty.innerHTML='<div class="empty-icon">📭</div><div class="empty-text">Sin registros</div>';
+    cont.appendChild(empty);
+  } else {
+    txs.forEach(t=>{
+      const row=document.createElement('div');row.className='drill-tx-row';
+      const badge=t.metodo==='EFECTIVO'?'💵':t.metodo==='TARJETA'?'💳':'🏦';
+      const qChip=t.cantidad!=null?` · <span style="font-family:var(--mono)">${t.cantidad} ${t.unidad||''}</span>`:'';
+      row.innerHTML=`
+        <div class="drill-tx-icon" style="background:${bg}">${icon}</div>
+        <div class="drill-tx-info">
+          <div class="drill-tx-desc">${t.descripcion||'—'}</div>
+          <div class="drill-tx-meta">${badge} ${t.proveedor||''} · ${t.fecha||''}${qChip}${t.folio?' · '+t.folio:''}</div>
+        </div>
+        <div class="drill-tx-amt" style="color:var(--accent2)">${fmtFull(t.monto)}</div>`;
+      row.onclick=()=>{document.getElementById('drillModal').classList.remove('open');openDetail(t.id);};
+      cont.appendChild(row);
+    });
+  }
+  document.getElementById('drillModal').classList.add('open');
 }
 
 function renderFechas(){
@@ -2526,26 +2612,13 @@ function setTipo(t){
     const custom=JSON.parse(localStorage.getItem('custom_conceptos')||'[]');
     custom.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;sel.insertBefore(o,sel.lastElementChild);});
   }
-}
-
-function checkConceptoOtro(){
-  const sel=document.getElementById('f-concepto');
+  // Ocultar input custom si estaba visible
   const customInp=document.getElementById('f-concepto-custom');
-  if(sel.value==='__NUEVO__'){customInp.style.display='block';customInp.focus();}
-  else customInp.style.display='none';
+  if(customInp){customInp.style.display='none';}
 }
 
 function getConceptoValue(){
-  const sel=document.getElementById('f-concepto');
-  if(sel.value==='__NUEVO__'){
-    const custom=document.getElementById('f-concepto-custom').value.trim().toUpperCase();
-    if(!custom){shakeInput('f-concepto-custom');return null;}
-    // Save custom concept
-    const saved=JSON.parse(localStorage.getItem('custom_conceptos')||'[]');
-    if(!saved.includes(custom)){saved.push(custom);localStorage.setItem('custom_conceptos',JSON.stringify(saved));}
-    return custom;
-  }
-  return sel.value;
+  return getSelectCustomValue('f-concepto','f-concepto-custom','custom_conceptos');
 }
 
 // ── CATÁLOGO DE PROVEEDORES ──────────────────────────────────
@@ -2583,14 +2656,61 @@ function migrarProveedoresDesdeTransacciones(){
   });
 }
 
+// ── SELECTS CON CATEGORÍAS CUSTOM (reutilizable en todo el app) ─────────────
+// storageKey: clave en localStorage donde se guardan las custom options de ese select
+function checkSelectCustom(selectId, inputId, storageKey){
+  const sel=document.getElementById(selectId);
+  const inp=document.getElementById(inputId);
+  if(!sel||!inp)return;
+  if(sel.value==='__NUEVO__'){inp.style.display='block';inp.focus();}
+  else inp.style.display='none';
+}
+
+// Obtiene el valor final del select: si es __NUEVO__, guarda y devuelve el valor del input custom
+function getSelectCustomValue(selectId, inputId, storageKey){
+  const sel=document.getElementById(selectId);
+  if(!sel)return null;
+  if(sel.value!=='__NUEVO__')return sel.value;
+  const inp=document.getElementById(inputId);
+  const custom=(inp?.value||'').trim().toUpperCase();
+  if(!custom){shakeInput(inputId);return null;}
+  // Persistir en localStorage
+  const saved=JSON.parse(localStorage.getItem(storageKey)||'[]');
+  if(!saved.includes(custom)){saved.push(custom);localStorage.setItem(storageKey,JSON.stringify(saved));}
+  // Agregar option al select y seleccionarla
+  let opt=Array.from(sel.options).find(o=>o.value===custom);
+  if(!opt){
+    opt=document.createElement('option');opt.value=custom;opt.textContent=custom;
+    sel.insertBefore(opt,sel.querySelector('option[value="__NUEVO__"]'));
+  }
+  sel.value=custom;inp.style.display='none';
+  return custom;
+}
+
+// Carga las custom options guardadas en un select (llamar al abrir el modal)
+function loadCustomOptions(selectId, storageKey){
+  const sel=document.getElementById(selectId);if(!sel)return;
+  const saved=JSON.parse(localStorage.getItem(storageKey)||'[]');
+  const newuevo=sel.querySelector('option[value="__NUEVO__"]');
+  saved.forEach(c=>{
+    if(!Array.from(sel.options).find(o=>o.value===c)){
+      const opt=document.createElement('option');opt.value=c;opt.textContent=c;
+      if(newuevo)sel.insertBefore(opt,newuevo);else sel.appendChild(opt);
+    }
+  });
+}
+
 function openNuevoProveedor(){
-  // Si el campo f-prov ya tiene texto, pre-llenar el nombre
   const prov=document.getElementById('f-prov')?.value.trim()||'';
   ['np-nombre','np-rfc','np-tel','np-email','np-contacto','np-direccion','np-notas'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   document.getElementById('np-regimen').value='';
   document.getElementById('np-categoria').value='MATERIALES';
+  // Ocultar input custom y cargar opciones guardadas
+  const catCustom=document.getElementById('np-categoria-custom');
+  if(catCustom){catCustom.style.display='none';catCustom.value='';}
+  loadCustomOptions('np-categoria','custom_cat_proveedores');
   if(prov) document.getElementById('np-nombre').value=prov;
   document.getElementById('nuevoProvModal').classList.add('open');
   setTimeout(()=>{
@@ -2605,13 +2725,15 @@ async function saveNuevoProveedor(){
   // Verificar duplicado
   const existing=getProveedores().find(p=>p.nombre.toLowerCase().trim()===nombre.toLowerCase());
   if(existing && !confirm(`Ya existe un proveedor "${existing.nombre}". ¿Crear duplicado?`))return;
+  const categoria=getSelectCustomValue('np-categoria','np-categoria-custom','custom_cat_proveedores');
+  if(!categoria)return;
   if(!state.proveedores) state.proveedores=[];
   const prov={
     id:'prov-'+uid(),
     nombre,
     rfc:document.getElementById('np-rfc').value.trim().toUpperCase(),
     regimen:document.getElementById('np-regimen').value,
-    categoria:document.getElementById('np-categoria').value,
+    categoria,
     tel:document.getElementById('np-tel').value.trim(),
     email:document.getElementById('np-email').value.trim(),
     contacto:document.getElementById('np-contacto').value.trim(),
